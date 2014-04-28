@@ -38,7 +38,7 @@ namespace ChangeTracking
                 if (!_OriginalValueDictionary.ContainsKey(propName))
                 {
                     var oldValue = _Properties[propName].GetValue(invocation.InvocationTarget, null);
-                    if (!oldValue.Equals(invocation.Arguments[0]))
+                    if (!Equals(oldValue, invocation.Arguments[0]))
                     {
                         _OriginalValueDictionary.Add(propName, oldValue);
                         if (ChangeTrackingStatus == ChangeStatus.Unchanged)
@@ -56,7 +56,7 @@ namespace ChangeTracking
                 else
                 {
                     var originalValue = _OriginalValueDictionary[propName];
-                    if (originalValue.Equals(invocation.Arguments[0]))
+                    if (Equals(originalValue, invocation.Arguments[0]))
                     {
                         _OriginalValueDictionary.Remove(propName);
                         if (_OriginalValueDictionary.Count == 0)
@@ -108,7 +108,7 @@ namespace ChangeTracking
                     invocation.Proceed();
                     break;
             }
-           
+
         }
 
         private TResult GetOriginalValue<TResult>(T target, Expression<Func<T, TResult>> selector)

@@ -86,6 +86,14 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
+        public void Change_Property_From_Null_To_Value_Should_Not_Throw()
+        {
+            var trackable = new Order { Id = 321, CustumerNumber = null }.AsTrackable();
+            
+            trackable.Invoking(o => o.CustumerNumber = "Test").ShouldNotThrow<NullReferenceException>();
+        }
+
+        [TestMethod]
         public void GetOriginalValue_Should_Return_Original_Value()
         {
             var order = GetOrder();
