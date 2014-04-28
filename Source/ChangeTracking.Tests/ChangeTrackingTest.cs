@@ -213,6 +213,17 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
+        public void When_Adding_To_Colletion_Via_Indexer_Status_Should_Be_Added()
+        {
+            IList<Order> list = new List<Order>();
+
+            var trackable = list.AsTrackable();
+            trackable.Add(new Order { Id = 999999999, CustumerNumber = "Custumer" });
+
+            trackable.Single(o => o.Id == 999999999).CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
+        }
+
+        [TestMethod]
         public void When_Deleting_From_Colletion_Status_Should_Be_Deleted()
         {
             var orders = GetOrdersIList();
