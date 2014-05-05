@@ -23,10 +23,7 @@ namespace ChangeTracking
             var method = memberInfo as MethodInfo;
             if (method != null)
             {
-                if (method.IsSetter())
-                {
-                    throw new InvalidOperationException(string.Format("Property {0} is not virtual. Can't track classes with non-virtual properties.", method.Name.Substring("set_".Length)));
-                }
+                throw new InvalidOperationException(string.Format("Property {0} is not virtual. Can't track classes with non-virtual properties.", method.Name.Substring("set_".Length)));
             }
         }
 

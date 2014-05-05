@@ -8,7 +8,7 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    public class ChangeTrackingInterceptor<T> : IInterceptor where T : class
+    internal sealed class ChangeTrackingInterceptor<T> : IInterceptor where T : class
     {
         private Dictionary<string, object> _OriginalValueDictionary;
         public event EventHandler StatusChanged = delegate { };
@@ -17,7 +17,7 @@ namespace ChangeTracking
 
         static ChangeTrackingInterceptor()
         {
-            _Properties = typeof(T).GetProperties().ToDictionary(pi => pi.Name);
+            _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(pi => pi.Name);
         }
 
         public ChangeTrackingInterceptor(ChangeStatus status)
@@ -30,11 +30,11 @@ namespace ChangeTracking
         {
             if (invocation.Method.IsSetter())
             {
-                string propName = invocation.Method.PropertyName();
                 if (ChangeTrackingStatus == ChangeStatus.Deleted)
                 {
                     throw new InvalidOperationException("Can not modify deleted object");
                 }
+                string propName = invocation.Method.PropertyName();
                 if (!_OriginalValueDictionary.ContainsKey(propName))
                 {
                     var oldValue = _Properties[propName].GetValue(invocation.InvocationTarget, null);
@@ -139,6 +139,7 @@ namespace ChangeTracking
 
         private T GetOriginal(T target)
         {
+            // this doesn't handle private fields
             var original = Activator.CreateInstance<T>();
             foreach (var property in _Properties.Values)
             {

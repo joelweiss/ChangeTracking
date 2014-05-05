@@ -42,10 +42,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChangeTrackingBindingList.cs" />
     <Compile Include="ChangeStatus.cs" />
     <Compile Include="ChangeTrackingCollectionInterceptor.cs" />
     <Compile Include="ChangeTrackingInterceptor.cs" />
     <Compile Include="ChangeTrackingInterceptorSelector.cs" />
+    <Compile Include="EditableObjectInterceptor.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="IChangeTrackingManager.cs" />
     <Compile Include="ChangeTrackingProxyGenerationHook.cs" />
     <Compile Include="IChangeTrackable.cs" />

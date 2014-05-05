@@ -2,46 +2,54 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace ChangeTracking
 {
-    internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IList<T>, IChangeTrackableCollection<T> where T : class
+    internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IChangeTrackableCollection<T> where T : class
     {
-        private IList<T> _Target;
+        private ChangeTrackingBindingList<T> _WrappedTarget;
         private IList<T> _DeletedItems;
+        private static HashSet<string> _ImplementedMethods;
+        private static HashSet<string> _BindingListImplementedMethods;
+        private static HashSet<string> _IBindingListImplementedMethods;
+
+        static ChangeTrackingCollectionInterceptor()
+        {
+            _ImplementedMethods = new HashSet<string>(typeof(ChangeTrackingCollectionInterceptor<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
+            _BindingListImplementedMethods = new HashSet<string>(typeof(ChangeTrackingBindingList<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy).Select(m => m.Name));
+            _IBindingListImplementedMethods = new HashSet<string>(typeof(ChangeTrackingBindingList<T>).GetInterfaceMap(typeof(System.ComponentModel.IBindingList)).TargetMethods.Where(mi => mi.IsPrivate).Select(mi => mi.Name.Substring(mi.Name.LastIndexOf('.') + 1)));
+        }
 
         public ChangeTrackingCollectionInterceptor(IList<T> target)
         {
             for (int i = 0; i < target.Count; i++)
             {
-                target[i] = target[i].AsTrackable();
+                target[i] = target[i].AsTrackable(notifyParentItemCanceled: ItemCanceled);
             }
-            _Target = target;
+            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled);
             _DeletedItems = new List<T>();
         }
 
         public void Intercept(IInvocation invocation)
         {
-            invocation.ReturnValue = invocation.Method.Invoke(this, invocation.Arguments);
-        }
-
-        public int IndexOf(T item)
-        {
-            return _Target.IndexOf(item);
-        }
-
-        public void Insert(int index, T item)
-        {
-            var trackable = item.AsTrackable(ChangeStatus.Added);
-            _Target.Insert(index, trackable);
-        }
-
-        public void RemoveAt(int index)
-        {
-            var trackable = this[index];
-            DeleteItem(trackable);
-            _Target.RemoveAt(index);
+            if (_ImplementedMethods.Contains(invocation.Method.Name))
+            {
+                invocation.ReturnValue = invocation.Method.Invoke(this, invocation.Arguments);
+                return;
+            }
+            if (_BindingListImplementedMethods.Contains(invocation.Method.Name))
+            {
+                invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                return;
+            }
+            if (_IBindingListImplementedMethods.Contains(invocation.Method.Name))
+            {
+            	invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                return;
+            }
+            invocation.Proceed();
         }
 
         private void DeleteItem(T item)
@@ -51,95 +59,28 @@ namespace ChangeTracking
             manager.Delete();
             if (currentStatus != ChangeStatus.Added)
             {
-            	_DeletedItems.Add(item);
+                _DeletedItems.Add(item);
             }
         }
-
-        public T this[int index]
+      
+        private void ItemCanceled(T item)
         {
-            get
-            {
-                return _Target[index];
-            }
-            set
-            {
-                var trackable = value as IChangeTrackable<T>;
-                if (trackable == null)
-                {
-                    trackable = (IChangeTrackable<T>)value.AsTrackable(ChangeStatus.Added);
-                }
-                _Target[index] = (T)trackable;
-            }
-        }
-
-        public void Add(T item)
-        {
-            var trackable = item.AsTrackable(ChangeStatus.Added);
-            _Target.Add(trackable);
-        }
-
-        public void Clear()
-        {
-            foreach (var item in _Target)
-            {
-                DeleteItem(item);
-            }
-            _Target.Clear();
-        }
-
-        public bool Contains(T item)
-        {
-            return _Target.Contains(item);
-        }
-
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            _Target.CopyTo(array, arrayIndex);
-        }
-
-        public int Count
-        {
-            get { return _Target.Count; }
-        }
-
-        public bool IsReadOnly
-        {
-            get { return _Target.IsReadOnly; }
-        }
-
-        public bool Remove(T item)
-        {
-            bool removed = _Target.Remove(item);
-            if (removed)
-            {
-            	DeleteItem(item);
-            }
-            return removed;
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return _Target.GetEnumerator();
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
+            _WrappedTarget.CancelNew(_WrappedTarget.IndexOf(item));
         }
 
         public IEnumerable<T> UnchangedItems
         {
-            get { return _Target.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>(); }
+            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>(); }
         }
 
         public IEnumerable<T> AddedItems
         {
-            get { return _Target.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Added).Cast<T>(); }
+            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Added).Cast<T>(); }
         }
 
         public IEnumerable<T> ChangedItems
         {
-            get { return _Target.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>(); }
+            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>(); }
         }
 
         public IEnumerable<T> DeletedItems

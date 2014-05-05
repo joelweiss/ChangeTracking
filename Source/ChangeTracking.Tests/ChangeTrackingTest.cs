@@ -11,7 +11,6 @@ namespace ChangeTracking.Tests
     [TestClass]
     public class ChangeTrackingTest
     {
-
         public TestContext TestContext { get; set; }
 
         private Order GetOrder(int id = 1, string custumerNumber = "Test")
@@ -89,7 +88,7 @@ namespace ChangeTracking.Tests
         public void Change_Property_From_Null_To_Value_Should_Not_Throw()
         {
             var trackable = new Order { Id = 321, CustumerNumber = null }.AsTrackable();
-            
+
             trackable.Invoking(o => o.CustumerNumber = "Test").ShouldNotThrow<NullReferenceException>();
         }
 
@@ -135,7 +134,7 @@ namespace ChangeTracking.Tests
 
             IList<Order> trackable = orders.AsTrackable();
 
-            trackable.Invoking(o => o.CastToIChangeTrackable()).ShouldNotThrow<InvalidCastException>();
+            trackable.Invoking(o => o.CastToIChangeTrackableCollection()).ShouldNotThrow<InvalidCastException>();
         }
 
         [TestMethod]
@@ -143,7 +142,7 @@ namespace ChangeTracking.Tests
         {
             var orders = GetOrdersIList();
 
-            orders.Invoking(o => o.CastToIChangeTrackable()).ShouldThrow<InvalidCastException>();
+            orders.Invoking(o => o.CastToIChangeTrackableCollection()).ShouldThrow<InvalidCastException>();
         }
 
         [TestMethod]
@@ -252,22 +251,112 @@ namespace ChangeTracking.Tests
             var first = trackable.First();
             trackable.Remove(first);
 
-            trackable.CastToIChangeTrackable().DeletedItems.Should().HaveCount(1)
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(1)
                 .And.OnlyContain(o => o.Id == first.Id && o.CustumerNumber == first.CustumerNumber);
         }
 
         [TestMethod]
-        public void Temp()
+        public void When_Using_Not_On_IList_Of_T_Or_Collection_Of_T_Should_Throw()
+        {
+            var orders = GetOrdersIList().ToArray();
+
+            orders.Invoking(o => o.AsTrackable()).ShouldThrow<InvalidOperationException>();
+        }
+
+        [TestMethod]
+        public void AsTrackable_On_Collection_Should_Make_It_IBindingList()
         {
             var orders = GetOrdersIList();
 
             var trackable = orders.AsTrackable();
-            var first = trackable.First();
-            var indexFirst = trackable[0];
 
-            var vv = EqualityComparer<Order>.Default.Equals(first, indexFirst);
-            var v = first.Equals(indexFirst);
-            var vvv = ReferenceEquals(first, indexFirst);
+            trackable.Should().BeAssignableTo<System.ComponentModel.IBindingList>();
+        }
+
+        [TestMethod]
+        public void AsTrackable_On_Collection_AddNew_Should_Raise_ListChanged()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+
+            bindingList.MonitorEvents();
+            bindingList.AddNew();
+
+            bindingList.ShouldRaise("ListChanged");
+        }
+
+        [TestMethod]
+        public void CancelEdit_On_Item_Should_Remove_From_Collection()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+
+            bindingList.AddNew();
+            var withAddedCount = bindingList.Count;
+            var addedItem = bindingList.Cast<Order>().Single(o => o.CustumerNumber == null);
+            var editableObject = (System.ComponentModel.IEditableObject)addedItem;
+            editableObject.CancelEdit();
+
+            bindingList.Count.Should().Be(withAddedCount - 1, because: "item was canceled");
+        }
+
+        [TestMethod]
+        public void CancelEdit_On_Item_Should_Revert_Changes()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            var editableObject = (System.ComponentModel.IEditableObject)trackable;
+
+            editableObject.BeginEdit();
+            trackable.CustumerNumber = "Testing";
+            editableObject.CancelEdit();
+
+            trackable.CustumerNumber.Should().Be("Test", because: "item was canceled");
+        }
+
+        [TestMethod]
+        public void CancelEdit_On_Item_After_EndEdit_Should_Not_Revert_Changes()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            var editableObject = (System.ComponentModel.IEditableObject)trackable;
+
+            editableObject.BeginEdit();
+            trackable.CustumerNumber = "Testing";
+            editableObject.EndEdit();
+            editableObject.CancelEdit();
+
+            trackable.CustumerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
+        }
+
+        [TestMethod]
+        public void With_Out_BeginEdit_CancelEdit_Should_Do_Nothing()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            var editableObject = (System.ComponentModel.IEditableObject)trackable;
+
+            trackable.CustumerNumber = "Testing";
+            editableObject.CancelEdit();
+
+            trackable.CustumerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
+        }
+
+        [TestMethod]
+        public void AsTrackable_On_Collection_Should_Make_It_ICancelAddNew()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+
+            trackable.Should().BeAssignableTo<System.ComponentModel.ICancelAddNew>();
         }
     }
 }
