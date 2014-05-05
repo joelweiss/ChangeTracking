@@ -4,6 +4,8 @@
         <id>ChangeTracking</id>
         <version>0.0.4-alpha</version>
         <authors>Joel Weiss</authors>
+        <licenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md</licenseUrl>
+        <projectUrl>https://github.com/joelweiss/ChangeTracking</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Track changes in POCO objects</description>
         <dependencies>
