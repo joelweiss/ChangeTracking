@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+    <metadata>
+        <id>ChangeTracking</id>
+        <version>0.0.4-alpha</version>
+        <authors>Joel Weiss</authors>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Track changes in POCO objects</description>
+        <dependencies>
+            <dependency id="Castle.Core" version="3.3.0" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="..\Source\ChangeTracking\bin\Release\ChangeTracking.dll" target="lib\ChangeTracking.dll" />
+    </files>
+</package>
