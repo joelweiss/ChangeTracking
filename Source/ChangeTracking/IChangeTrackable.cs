@@ -32,5 +32,15 @@ namespace ChangeTracking
         /// <returns></returns>
         /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>
         T GetOriginal();
+
+        /// <summary>
+        /// Accepts all changes the changes, and markses object as Unchanged.
+        /// </summary>
+        void AcceptChanges();
+
+        /// <summary>
+        /// Reject all changes made (only rejects changes made after last AcceptChanges or RejectChanges), and markes object as Unchanged.
+        /// </summary>
+        void RejectChanges();
     }
 }

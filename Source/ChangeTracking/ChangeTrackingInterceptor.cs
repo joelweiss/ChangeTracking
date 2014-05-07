@@ -37,16 +37,16 @@ namespace ChangeTracking
                 string propName = invocation.Method.PropertyName();
                 if (!_OriginalValueDictionary.ContainsKey(propName))
                 {
-                    var oldValue = _Properties[propName].GetValue(invocation.InvocationTarget, null);
-                    if (!Equals(oldValue, invocation.Arguments[0]))
+                    var previousalue = _Properties[propName].GetValue(invocation.InvocationTarget, null);
+                    if (!Equals(previousalue, invocation.Arguments[0]))
                     {
-                        _OriginalValueDictionary.Add(propName, oldValue);
+                        _OriginalValueDictionary.Add(propName, previousalue);
                         if (ChangeTrackingStatus == ChangeStatus.Unchanged)
                         {
                             ChangeTrackingStatus = ChangeStatus.Changed;
                         }
                         invocation.Proceed();
-                        StatusChanged(invocation.InvocationTarget, EventArgs.Empty);
+                        StatusChanged(invocation.Proxy, EventArgs.Empty);
                     }
                     else
                     {
@@ -65,7 +65,7 @@ namespace ChangeTracking
                             {
                                 ChangeTrackingStatus = ChangeStatus.Unchanged;
                             }
-                            StatusChanged(invocation.InvocationTarget, EventArgs.Empty);
+                            StatusChanged(invocation.Proxy, EventArgs.Empty);
                         }
                     }
                     invocation.Proceed();
@@ -104,11 +104,49 @@ namespace ChangeTracking
                     ChangeTrackingStatus = ChangeStatus.Deleted;
                     StatusChanged(invocation.InvocationTarget, EventArgs.Empty);
                     break;
+                case "AcceptChanges":
+                    AcceptChanges(invocation.Proxy);
+                    break;
+                case "RejectChanges":
+                    RejectChanges(invocation.Proxy);
+                    break;
                 default:
                     invocation.Proceed();
                     break;
             }
+        }
 
+        private void RejectChanges(object proxy)
+        {
+            if (ChangeTrackingStatus == ChangeStatus.Deleted)
+            {
+                throw new InvalidOperationException("Can not call RegectChanges on deleted object");
+            }
+            if (_OriginalValueDictionary.Count > 0)
+            {
+                object target = ((IProxyTargetAccessor)proxy).DynProxyGetTarget();
+                foreach (var changedProperty in _OriginalValueDictionary)
+                {
+                    _Properties[changedProperty.Key].SetValue(target, changedProperty.Value, null);
+                }
+                _OriginalValueDictionary.Clear();
+                ChangeTrackingStatus = ChangeStatus.Unchanged;
+                StatusChanged(proxy, EventArgs.Empty);
+            }
+        }
+
+        private void AcceptChanges(object proxy)
+        {
+            if (ChangeTrackingStatus == ChangeStatus.Deleted)
+            {
+                throw new InvalidOperationException("Can not call AcceptChanges on deleted object");
+            }
+            if (_OriginalValueDictionary.Count > 0)
+            {
+                _OriginalValueDictionary.Clear();
+                ChangeTrackingStatus = ChangeStatus.Unchanged;
+                StatusChanged(proxy, EventArgs.Empty);
+            }
         }
 
         private TResult GetOriginalValue<TResult>(T target, Expression<Func<T, TResult>> selector)
@@ -139,6 +177,10 @@ namespace ChangeTracking
 
         private T GetOriginal(T target)
         {
+            if (_OriginalValueDictionary.Count == 0)
+            {
+                return target;
+            }
             // this doesn't handle private fields
             var original = Activator.CreateInstance<T>();
             foreach (var property in _Properties.Values)

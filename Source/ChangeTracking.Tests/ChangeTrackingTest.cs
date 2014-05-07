@@ -358,5 +358,82 @@ namespace ChangeTracking.Tests
 
             trackable.Should().BeAssignableTo<System.ComponentModel.ICancelAddNew>();
         }
+
+        [TestMethod]
+        public void AcceptChanges_Should_Status_Be_Unchanged()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            trackable.Id = 963;
+            trackable.CustumerNumber = "Testing";
+            var intf = trackable.CastToIChangeTrackable();
+
+            var oldChangeStatus = intf.ChangeTrackingStatus;
+            intf.RejectChanges();
+
+            oldChangeStatus.Should().Be(ChangeStatus.Changed);
+            intf.ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
+        }
+
+        [TestMethod]
+        public void AcceptChanges_Should_AcceptChanges()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            trackable.Id = 963;
+            trackable.CustumerNumber = "Testing";
+            var intf = trackable.CastToIChangeTrackable();
+            intf.AcceptChanges();
+
+            intf.GetOriginal().ShouldBeEquivalentTo(intf.GetOriginal());
+            intf.GetOriginalValue(o => o.Id).Should().Be(963);
+        }
+
+        [TestMethod]
+        public void RejectChanges_Should_Status_Be_Unchanged()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            trackable.Id = 963;
+            trackable.CustumerNumber = "Testing";
+            var intf = trackable.CastToIChangeTrackable();
+            var oldChangeStatus = intf.ChangeTrackingStatus;
+            intf.RejectChanges();
+
+            oldChangeStatus.Should().Be(ChangeStatus.Changed);
+            intf.ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
+        }
+
+        [TestMethod]
+        public void RejectChanges_Should_RejectChanges()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            trackable.Id = 963;
+            trackable.CustumerNumber = "Testing";
+            var intf = trackable.CastToIChangeTrackable();
+            intf.RejectChanges();
+
+            trackable.ShouldBeEquivalentTo(GetOrder());
+        }
+
+        [TestMethod]
+        public void RejectChanges_Should_AcceptChanges_Only_After_Last_AcceptChanges()
+        {
+            var order = GetOrder();
+
+            var trackable = order.AsTrackable();
+            trackable.Id = 963;
+            trackable.CustumerNumber = "Testing";
+            var intf = trackable.CastToIChangeTrackable();
+            intf.AcceptChanges();
+
+            intf.GetOriginal().ShouldBeEquivalentTo(intf.GetOriginal());
+            intf.GetOriginalValue(o => o.Id).Should().Be(963);
+        }
     }
 }
