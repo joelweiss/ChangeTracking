@@ -79,6 +79,10 @@ namespace ChangeTracking
                 {
                     invocation.ReturnValue = ChangeTrackingStatus;
                 }
+                else if (propName == "IsChanged")
+                {
+                    invocation.ReturnValue = ChangeTrackingStatus != ChangeStatus.Unchanged;
+                }
                 else
                 {
                     invocation.Proceed();
@@ -113,39 +117,6 @@ namespace ChangeTracking
                 default:
                     invocation.Proceed();
                     break;
-            }
-        }
-
-        private void RejectChanges(object proxy)
-        {
-            if (ChangeTrackingStatus == ChangeStatus.Deleted)
-            {
-                throw new InvalidOperationException("Can not call RegectChanges on deleted object");
-            }
-            if (_OriginalValueDictionary.Count > 0)
-            {
-                object target = ((IProxyTargetAccessor)proxy).DynProxyGetTarget();
-                foreach (var changedProperty in _OriginalValueDictionary)
-                {
-                    _Properties[changedProperty.Key].SetValue(target, changedProperty.Value, null);
-                }
-                _OriginalValueDictionary.Clear();
-                ChangeTrackingStatus = ChangeStatus.Unchanged;
-                StatusChanged(proxy, EventArgs.Empty);
-            }
-        }
-
-        private void AcceptChanges(object proxy)
-        {
-            if (ChangeTrackingStatus == ChangeStatus.Deleted)
-            {
-                throw new InvalidOperationException("Can not call AcceptChanges on deleted object");
-            }
-            if (_OriginalValueDictionary.Count > 0)
-            {
-                _OriginalValueDictionary.Clear();
-                ChangeTrackingStatus = ChangeStatus.Unchanged;
-                StatusChanged(proxy, EventArgs.Empty);
             }
         }
 
@@ -189,6 +160,38 @@ namespace ChangeTracking
                 property.SetValue(original, _OriginalValueDictionary.TryGetValue(property.Name, out value) ? value : property.GetValue(target, null), null);
             }
             return original;
+        }
+
+        private void AcceptChanges(object proxy)
+        {
+            if (ChangeTrackingStatus == ChangeStatus.Deleted)
+            {
+                throw new InvalidOperationException("Can not call AcceptChanges on deleted object");
+            }
+            if (_OriginalValueDictionary.Count > 0)
+            {
+                _OriginalValueDictionary.Clear();
+                ChangeTrackingStatus = ChangeStatus.Unchanged;
+                StatusChanged(proxy, EventArgs.Empty);
+            }
+        }
+
+        private void RejectChanges(object proxy)
+        {
+            if (_OriginalValueDictionary.Count > 0)
+            {
+                object target = ((IProxyTargetAccessor)proxy).DynProxyGetTarget();
+                foreach (var changedProperty in _OriginalValueDictionary)
+                {
+                    _Properties[changedProperty.Key].SetValue(target, changedProperty.Value, null);
+                }
+                _OriginalValueDictionary.Clear();
+            }
+            if (ChangeTrackingStatus == ChangeStatus.Changed || ChangeTrackingStatus == ChangeStatus.Deleted)
+            {
+                ChangeTrackingStatus = ChangeStatus.Unchanged;
+                StatusChanged(proxy, EventArgs.Empty);
+            }
         }
     }
 }

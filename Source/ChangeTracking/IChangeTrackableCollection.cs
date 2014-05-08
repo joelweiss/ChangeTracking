@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    public interface IChangeTrackableCollection<T>
+    public interface IChangeTrackableCollection<T> : System.ComponentModel.IRevertibleChangeTracking
     {
         IEnumerable<T> UnchangedItems { get; }        
         IEnumerable<T> AddedItems { get; }

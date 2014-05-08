@@ -43,6 +43,26 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
+        public void AsTrackable_Should_Make_Object_Implement_IEditableObject()
+        {
+            var order = GetOrder();
+
+            Order trackable = order.AsTrackable();
+
+            trackable.Should().BeAssignableTo<System.ComponentModel.IEditableObject>();
+        }
+
+        [TestMethod]
+        public void AsTrackable_Should_Make_Object_Implement_IRevertibleChangeTracking()
+        {
+            var order = GetOrder();
+
+            Order trackable = order.AsTrackable();
+
+            trackable.Should().BeAssignableTo<System.ComponentModel.IRevertibleChangeTracking>();
+        }
+
+        [TestMethod]
         public void When_AsTrackable_CastToIChangeTrackable_Should_Not_Throw_InvalidCastException()
         {
             var order = GetOrder();
@@ -243,13 +263,30 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void When_Deleting_From_Colletion_Status_Should_Be_Added_To_DeletedItems()
+        public void When_Deleting_From_Colletion_Should_Be_Added_To_DeletedItems()
         {
             var orders = GetOrdersIList();
 
             var trackable = orders.AsTrackable();
             var first = trackable.First();
             trackable.Remove(first);
+
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(1)
+                .And.OnlyContain(o => o.Id == first.Id && o.CustumerNumber == first.CustumerNumber);
+        }
+
+        [TestMethod]
+        public void When_Deleting_From_Colletion_Item_That_Status_Is_Added_Should_Not_Be_Added_To_DeletedItems()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable.First();
+            trackable.Remove(first);
+            var order = GetOrder();
+            order.Id = 999;
+            trackable.Add(order);
+            trackable.Remove(trackable.Single(o => o.Id == 999));
 
             trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(1)
                 .And.OnlyContain(o => o.Id == first.Id && o.CustumerNumber == first.CustumerNumber);
@@ -360,6 +397,16 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
+        public void AsTrackable_On_Collection_Should_Make_It_IRevertibleChangeTracking()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+
+            trackable.Should().BeAssignableTo<System.ComponentModel.IRevertibleChangeTracking>();
+        }
+
+        [TestMethod]
         public void AcceptChanges_Should_Status_Be_Unchanged()
         {
             var order = GetOrder();
@@ -434,6 +481,137 @@ namespace ChangeTracking.Tests
 
             intf.GetOriginal().ShouldBeEquivalentTo(intf.GetOriginal());
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
+        }
+
+        [TestMethod]
+        public void AcceptChanges_On_Collection_Should_All_Items_Status_Be_Unchanged()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable.First();
+            first.Id = 963;
+            first.CustumerNumber = "Testing";
+            var collectionintf = trackable.CastToIChangeTrackableCollection();
+            collectionintf.AcceptChanges();
+
+            trackable.All(o => o.CastToIChangeTrackable().ChangeTrackingStatus == ChangeStatus.Unchanged).Should().BeTrue();
+        }
+
+        [TestMethod]
+        public void AcceptChanges_On_Collection_Should_AcceptChanges()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable.First();
+            first.Id = 963;
+            first.CustumerNumber = "Testing";
+            var itemIntf = first.CastToIChangeTrackable();
+            var collectionintf = trackable.CastToIChangeTrackableCollection();
+            int oldChangeStatusCount = collectionintf.ChangedItems.Count();
+            collectionintf.AcceptChanges();
+
+            itemIntf.GetOriginalValue(c => c.CustumerNumber).Should().Be("Testing");
+            itemIntf.GetOriginalValue(c => c.Id).Should().Be(963);
+            oldChangeStatusCount.Should().Be(1);
+            collectionintf.ChangedItems.Count().Should().Be(0);
+        }
+
+        [TestMethod]
+        public void AcceptChanges_On_Collection_Should_Clear_DeletedItems()
+        {
+            var orders = GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable.First();
+            trackable.Remove(first);
+            var intf = trackable.CastToIChangeTrackableCollection();
+            int oldDeleteStatusCount = intf.DeletedItems.Count();
+            intf.AcceptChanges();
+
+
+            oldDeleteStatusCount.Should().Be(1);
+            intf.DeletedItems.Count().Should().Be(0);
+            trackable.All(o => o.CastToIChangeTrackable().ChangeTrackingStatus == ChangeStatus.Unchanged).Should().BeTrue();
+        }
+
+        [TestMethod]
+        public void RejectChanges_On_Collection_Should_All_Items_Status_Be_Unchanged()
+        {
+            var orders = GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = trackable.First();
+            first.Id = 963;
+            first.CustumerNumber = "Testing";
+            var intf = trackable.CastToIChangeTrackableCollection();
+            var oldAnythingUnchanged = intf.ChangedItems.Any();
+            intf.RejectChanges();
+
+            oldAnythingUnchanged.Should().BeTrue();
+            intf.ChangedItems.Count().Should().Be(0);
+        }
+
+        [TestMethod]
+        public void RejectChanges_On_Collection_Should_RejectChanges()
+        {
+            var orders = GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = trackable.First();
+            first.Id = 963;
+            first.CustumerNumber = "Testing";
+            var newOrder = GetOrder();
+            newOrder.Id = 999;
+            trackable.Add(newOrder);
+            trackable.RemoveAt(5);
+            var intf = trackable.CastToIChangeTrackableCollection();
+            intf.RejectChanges();
+            var ordersToMatch = GetOrdersIList().AsTrackable();
+
+            intf.UnchangedItems.Should().Contain(i => ordersToMatch.SingleOrDefault(o => 
+                o.Id == i.Id && 
+                i.CustumerNumber == o.CustumerNumber &&
+                i.CastToIChangeTrackable().ChangeTrackingStatus == o.CastToIChangeTrackable().ChangeTrackingStatus) != null);
+            intf.UnchangedItems.Count().Should().Be(ordersToMatch.Count);
+        }
+
+        [TestMethod]
+        public void RejectChanges_On_Collection_Should_Move_DeletedItems_Back_To_Unchanged()
+        {
+            var orders = GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = orders.First();
+            trackable.Remove(first);
+            var intf = trackable.CastToIChangeTrackableCollection();
+            intf.RejectChanges();
+
+            trackable.Count.Should().Be(10);
+            intf.UnchangedItems.Count().Should().Be(10);
+        }
+
+        [TestMethod]
+        public void RejectChanges_On_Collection_Should_RejectChanges_Only_After_Last_AcceptChanges()
+        {
+            var orders = GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = orders.First();
+            first.Id = 963;
+            first.CustumerNumber = "Testing";
+            var collectionIntf = trackable.CastToIChangeTrackableCollection();
+            collectionIntf.AcceptChanges();
+            first.Id = 999;
+            first.CustumerNumber = "Testing 123";
+            collectionIntf.RejectChanges();
+            var intf = first.CastToIChangeTrackable();
+            var orderToMatch = new Order { Id = 963, CustumerNumber = "Testing" };
+
+            intf.GetOriginal().ShouldBeEquivalentTo(orderToMatch);
+            intf.GetOriginalValue(o => o.Id).Should().Be(963);
+            first.ShouldBeEquivalentTo(orderToMatch);
         }
     }
 }

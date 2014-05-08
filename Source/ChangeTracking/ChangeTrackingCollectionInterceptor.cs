@@ -87,5 +87,42 @@ namespace ChangeTracking
         {
             get { return _DeletedItems.Select(i => i); }
         }
+
+        public void AcceptChanges()
+        {
+            foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
+            {
+                item.AcceptChanges();
+                var editable = item as System.ComponentModel.IEditableObject;
+                if (editable != null)
+                {
+                    editable.EndEdit();
+                }
+            }
+            _DeletedItems.Clear();
+        }
+
+        public void RejectChanges()
+        {
+            AddedItems.ToList().ForEach(i => _WrappedTarget.Remove(i));
+            foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
+            {
+                item.RejectChanges();
+            }
+            foreach (var item in _DeletedItems)
+            {
+                item.CastToIChangeTrackable().RejectChanges();
+                _WrappedTarget.Add(item);
+            }
+            _DeletedItems.Clear();
+        }
+
+        public bool IsChanged
+        {
+            get 
+            {
+                return ChangedItems.Any() || AddedItems.Any() || DeletedItems.Any();
+            }
+        }
     }
 }
