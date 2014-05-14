@@ -8,8 +8,11 @@
         <licenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md</licenseUrl>
         <projectUrl>https://github.com/joelweiss/ChangeTracking</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation (AKA Magic).</description>
+        <description>Track changes in your POCO objects, and in your collections.
+
+By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation (AKA Magic).</description>
         <summary>Track changes in your POCO objects, and in your collections.</summary>
+        <tags>ChangeTracking DynamicProxy Change Tracking POCO</tags>
         <dependencies>
             <dependency id="Castle.Core" version="3.3.0" />
         </dependencies>
