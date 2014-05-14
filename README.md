@@ -14,7 +14,7 @@ Example
 ##To make an object trackable
 ```csharp
 using ChangeTracking;
-...
+//...
 Order order = new Order { Id = 1, CustumerNumber = "Test" };
 Order trackedOrder = order.AsTrackable();
 ```
@@ -35,7 +35,7 @@ bool isChanged = trackable.IsChanged;
 //Will retrieve the original value of a property
 string originalCustNumber = trackable.GetOriginalValue(o => o.CustumerNumber);
 
-//Will retrieve a copy of the original value
+//Will retrieve a copy of the original item
 var originalOrder = trackable.GetOriginal();
 
 //Calling RejectChanges will reject all the changes you made, reset all properties to their original values and set ChangeTrackingStatus to Unchanged
