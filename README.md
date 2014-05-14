@@ -1,7 +1,7 @@
 #ChangeTracking
 
-Track changes in your POCO objects, and in your collections collections.
-By using [Castle Dynamic Proxy](http://www.castleproject.org/projects/dynamicproxy/) to create proxies at runtime of your classes you can use your objects just like you used do, and just by calling the `AsTrackable()` extension method, you get automatic change tracking, and cancelation.
+Track changes in your POCO objects, and in your collections.
+By using [Castle Dynamic Proxy](http://www.castleproject.org/projects/dynamicproxy/) to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the `AsTrackable()` extension method, you get automatic change tracking, and cancellation (AKA Magic).
 
 All trackable POCOs implement [`IChangeTrackable<T>`](https://github.com/joelweiss/ChangeTracking/blob/master/Source/ChangeTracking/IChangeTrackable.cs), [`IRevertibleChangeTracking`](http://msdn.microsoft.com/en-us/library/vstudio/system.componentmodel.irevertiblechangetracking.aspx), [`IChangeTracking`](http://msdn.microsoft.com/en-us/library/vstudio/system.componentmodel.ichangetracking.aspx), [`IEditableObject`](http://msdn.microsoft.com/en-us/library/system.componentmodel.ieditableobject.aspx) and [`INotifyPropertyChanged`](http://msdn.microsoft.com/en-us/library/system.componentmodel.inotifypropertychanged.aspx).
 
@@ -60,13 +60,13 @@ And here is what's available on `trackable`.
 // Will be true if there are any changed items, added items or deleted items in the collection.
 bool isChanged = trackable.IsChanged;
 
-// Will retrun all items with ChangeTrackingStatus of Unchanged
+// Will return all items with ChangeTrackingStatus of Unchanged
 IEnumerable<Order> unchangedOrders = trackable.UnchangedItems;
-// Will retrun all items that were added to the collection - with ChangeTrackingStatus of Added
+// Will return all items that were added to the collection - with ChangeTrackingStatus of Added
 IEnumerable<Order> addedOrders = trackable.AddedItems;
-// Will retrun all items with ChangeTrackingStatus of Changed
+// Will return all items with ChangeTrackingStatus of Changed
 IEnumerable<Order> changedOrders = trackable.ChangedItems;
-// Will retrun all items that were removed from the collection - with ChangeTrackingStatus of Deleted
+// Will return all items that were removed from the collection - with ChangeTrackingStatus of Deleted
 IEnumerable<Order> deletedOrders = trackable.DeletedItems;
 
 // Will Accept all the changes in the collection and its items, deleted items will be cleared and all items ChangeTrackingStatus will be Unchanged
