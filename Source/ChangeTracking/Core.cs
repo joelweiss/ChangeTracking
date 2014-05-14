@@ -23,9 +23,9 @@ namespace ChangeTracking
             };
         }
 
-        public static object AsTrackableObject(Type type, object target, ChangeStatus status = ChangeStatus.Unchanged, Action<object> notifyParentItemCanceled = null)
+        internal static object AsTrackableObject(Type type, object target, ChangeStatus status = ChangeStatus.Unchanged, Action<object> notifyParentItemCanceled = null)
         {
-            if (type == typeof(IList) || type == typeof(ICollection))
+            if (type == typeof(ICollection))
             {
                 throw new InvalidOperationException("Only IList<T> and ICollection<T> are supported");
             }
@@ -51,7 +51,7 @@ namespace ChangeTracking
 
         public static T AsTrackable<T>(this T target, ChangeStatus status = ChangeStatus.Unchanged, Action<T> notifyParentItemCanceled = null) where T : class
         {
-            if (target as IList != null || target as ICollection != null)
+            if (target as ICollection != null)
             {
                 throw new InvalidOperationException("Only IList<T> and ICollection<T> are supported");
             }
@@ -60,6 +60,11 @@ namespace ChangeTracking
                 new[] { typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager<T>), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
                 target, _Options, new ChangeTrackingInterceptor<T>(status), new EditableObjectInterceptor<T>(notifyParentItemCanceled), new NotifyPropertyChangedInterceptor<T>());
             return (T)proxy;
+        }
+
+        public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target) where T : class
+        {
+            return ((ICollection<T>)target).AsTrackable();
         }
 
         public static ICollection<T> AsTrackable<T>(this ICollection<T> target) where T : class
@@ -72,9 +77,14 @@ namespace ChangeTracking
             return list.AsTrackable();
         }
 
+        public static IList<T> AsTrackable<T>(this List<T> target) where T : class
+        {
+            return ((IList<T>)target).AsTrackable();
+        }
+
         public static IList<T> AsTrackable<T>(this IList<T> target) where T : class
         {
-            if (target.OfType<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus != ChangeStatus.Unchanged).Any())
+            if (target.OfType<IChangeTrackable<T>>().Any(ct => ct.ChangeTrackingStatus != ChangeStatus.Unchanged))
             {
                 throw new InvalidOperationException("some items in the collection are already being tracked");
             }

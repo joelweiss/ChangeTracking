@@ -15,7 +15,6 @@ namespace ChangeTracking
         /// Gets the original value of a given property.
         /// </summary>
         /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="target">The target.</param>
         /// <param name="selector">The selector.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentException">
@@ -28,7 +27,6 @@ namespace ChangeTracking
         /// <summary>
         /// Gets the original.
         /// </summary>
-        /// <param name="target">The target.</param>
         /// <returns></returns>
         /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>
         T GetOriginal();
