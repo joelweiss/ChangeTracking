@@ -11,7 +11,7 @@ And all trackable collections implement [`IChangeTrackableCollection<T>`](https:
 Example
 ---------
 
-To make an object trackable
+##To make an object trackable
 ```csharp
 using ChangeTracking;
 ...
@@ -44,7 +44,7 @@ trackable.RejectChanges();
 //Calling AcceptChanges will accept all the changes you made, clears the original values and set ChangeTrackingStatus to Unchanged
 trackable.AcceptChanges();
 ```
-and on a collection
+##And on a collection
 ```csharp
 var orders = new List<Order>{new Order { Id = 1, CustumerNumber = "Test" } };
 IList<Order> trackableOrders = orders.AsTrackable();
