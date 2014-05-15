@@ -66,9 +66,15 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Helper.cs" />
+    <Compile Include="IChangeTrackableCollectionTests.cs" />
+    <Compile Include="IBindingListTests.cs" />
+    <Compile Include="INotifyPropertyChangedTests.cs" />
+    <Compile Include="IRevertibleChangeTrackingTests.cs" />
+    <Compile Include="IEditableObjectTests.cs" />
+    <Compile Include="IChangeTrackableTests.cs" />
     <Compile Include="SpeedTest.cs" />
     <Compile Include="Order.cs" />
-    <Compile Include="ChangeTrackingTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
