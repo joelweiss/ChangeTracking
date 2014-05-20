@@ -32,5 +32,19 @@ namespace ChangeTracking.Tests
 
             trackable.ShouldRaise("PropertyChanged");
         }
+
+        [TestMethod]
+        public void When_Raised_Property_Should_Be_Changed()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            var inpc = (System.ComponentModel.INotifyPropertyChanged)trackable;
+            int newValue = 0;
+            inpc.PropertyChanged += (o, e) => newValue = order.Id;
+
+            trackable.Id = 1234;
+
+            newValue.Should().Be(1234);
+        }
     }
 }

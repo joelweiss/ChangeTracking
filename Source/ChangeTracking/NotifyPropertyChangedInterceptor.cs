@@ -28,11 +28,11 @@ namespace ChangeTracking
             {
                 string propName = invocation.Method.PropertyName();
                 var previousalue = _Properties[propName].GetValue(invocation.InvocationTarget, null);
+                invocation.Proceed();
                 if (!Equals(previousalue, invocation.Arguments[0]))
                 {
                     PropertyChanged(invocation.Proxy, new System.ComponentModel.PropertyChangedEventArgs(propName));
                 }
-                invocation.Proceed();
                 return;
             }
             switch (invocation.Method.Name)
