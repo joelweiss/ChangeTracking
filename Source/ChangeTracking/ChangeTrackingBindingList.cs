@@ -18,6 +18,13 @@ namespace ChangeTracking
         {
             _DeleteItem = deleteItem;
             _ItemCanceled = itemCanceled;
+            var bindingListType = typeof(ChangeTrackingBindingList<T>).BaseType;
+            bindingListType.GetField("raiseItemChangedEvents", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(this, true);
+            var hookMethod = bindingListType.GetMethod("HookPropertyChanged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            foreach (var item in list)
+            {
+                hookMethod.Invoke(this, new object[] { item });
+            }
         }
 
         protected override void InsertItem(int index, T item)

@@ -61,5 +61,19 @@ namespace ChangeTracking.Tests
 
             bindingList.Count.Should().Be(withAddedCount - 1, because: "item was canceled");
         }
+        
+        [TestMethod]
+        public void Change_Property_On_Item_That_Implements_INotifyPropertyChangedd_In_Collection_Should_Raise_ListChanged()
+        {
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+
+            bindingList.MonitorEvents();
+            ((Order)bindingList[0]).Id = 123;
+
+            bindingList.ShouldRaise("ListChanged");
+        }
     }
 }

@@ -11,7 +11,6 @@ namespace ChangeTracking
     internal class NotifyPropertyChangedInterceptor<T> : IInterceptor
     {
         private static Dictionary<string, System.Reflection.PropertyInfo> _Properties;
-        private static HashSet<string> _ImplementedMethods;
 
         static NotifyPropertyChangedInterceptor()
         {

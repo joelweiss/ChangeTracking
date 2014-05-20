@@ -13,7 +13,7 @@ namespace ChangeTracking
         private Dictionary<string, object> _OriginalValueDictionary;
         public event EventHandler StatusChanged = delegate { };
         private static Dictionary<string, PropertyInfo> _Properties;
-        public ChangeStatus ChangeTrackingStatus { get; set; }
+        public ChangeStatus ChangeTrackingStatus { get; private set; }
 
         static ChangeTrackingInterceptor()
         {
