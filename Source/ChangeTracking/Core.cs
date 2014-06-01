@@ -53,7 +53,7 @@ namespace ChangeTracking
         {
             if (target as ICollection != null)
             {
-                throw new InvalidOperationException("Only IList<T> and ICollection<T> are supported");
+                throw new InvalidOperationException("Only IList<T>, List<T> and ICollection<T> are supported");
             }
 
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),

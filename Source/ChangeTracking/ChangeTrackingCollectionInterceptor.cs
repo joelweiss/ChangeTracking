@@ -46,7 +46,7 @@ namespace ChangeTracking
             }
             if (_IBindingListImplementedMethods.Contains(invocation.Method.Name))
             {
-            	invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
                 return;
             }
             invocation.Proceed();
@@ -62,7 +62,7 @@ namespace ChangeTracking
                 _DeletedItems.Add(item);
             }
         }
-      
+
         private void ItemCanceled(T item)
         {
             _WrappedTarget.CancelNew(_WrappedTarget.IndexOf(item));
@@ -111,7 +111,7 @@ namespace ChangeTracking
             }
             foreach (var item in _DeletedItems)
             {
-                item.CastToIChangeTrackable().RejectChanges();
+                ((System.ComponentModel.IRevertibleChangeTracking)item).RejectChanges();
                 _WrappedTarget.Add(item);
             }
             _DeletedItems.Clear();
@@ -119,7 +119,7 @@ namespace ChangeTracking
 
         public bool IsChanged
         {
-            get 
+            get
             {
                 return ChangedItems.Any() || AddedItems.Any() || DeletedItems.Any();
             }

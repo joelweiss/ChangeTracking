@@ -10,7 +10,7 @@ namespace ChangeTracking.Tests
     public class SpeedTest
     {
         public TestContext TestContext { get; set; }
-        
+
         [TestMethod]
         public void TestSpeed()
         {
@@ -36,7 +36,7 @@ namespace ChangeTracking.Tests
                 trackedList[i] = trackedList[i].AsTrackable();
             }
             swAsTrackable.Stop();
-            TestContext.WriteLine("AsTrackable: {0}", swAsTrackable.ElapsedMilliseconds);
+            TestContext.WriteLine("Call AsTrackable on {0:N0} objects: {1} ms", reps, swAsTrackable.ElapsedMilliseconds);
 
             var noneTrackedList = lists[1];
             var swNotTracked = new Stopwatch();
@@ -51,7 +51,7 @@ namespace ChangeTracking.Tests
                 var cust = order.CustumerNumber;
             }
             swNotTracked.Stop();
-            TestContext.WriteLine("None tracked objects: {0}", swNotTracked.ElapsedMilliseconds);
+            TestContext.WriteLine("Write and Read {0:N0} none tracked objects: {1} ms", reps, swNotTracked.ElapsedMilliseconds);
             GC.Collect();
             var swTracked = new Stopwatch();
             swTracked.Start();
@@ -64,7 +64,7 @@ namespace ChangeTracking.Tests
                 var cust = order.CustumerNumber;
             }
             swTracked.Stop();
-            TestContext.WriteLine("Tracked objects: {0}", swTracked.ElapsedMilliseconds);
+            TestContext.WriteLine("Write and Read {0:N0} tracked objects: {1} ms", reps, swTracked.ElapsedMilliseconds);
         }
     }
 }

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
     <metadata>
         <id>ChangeTracking</id>
-        <version>0.0.9-alpha</version>
+        <version>1.0.0-beta</version>
         <title>Change Tracking</title>
         <authors>Joel Weiss</authors>
         <licenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md</licenseUrl>
@@ -10,7 +10,7 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Track changes in your POCO objects, and in your collections.
 
-By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation (AKA Magic).</description>
+By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation.</description>
         <summary>Track changes in your POCO objects, and in your collections.</summary>
         <tags>ChangeTracking DynamicProxy Change Tracking POCO</tags>
         <dependencies>
@@ -18,6 +18,6 @@ By using Castle Dynamic Proxy to create proxies of your classes at runtime, you 
         </dependencies>
     </metadata>
     <files>
-        <file src="..\Source\ChangeTracking\bin\Release\ChangeTracking.dll" target="lib\ChangeTracking.dll" />
+        <file src="..\Source\ChangeTracking\bin\Release\ChangeTracking.dll" target="lib\net40\ChangeTracking.dll" />
     </files>
 </package>
