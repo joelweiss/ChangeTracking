@@ -40,7 +40,7 @@ namespace ChangeTracking
                 return proxy;
             }
             return _ProxyGenerator.CreateClassProxyWithTarget(type,
-                         new[] { typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager<>).MakeGenericType(type), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
+                         new[] { typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
                          target,
                          _Options,
                          (IInterceptor)Activator.CreateInstance(typeof(ChangeTrackingInterceptor<>).MakeGenericType(type), status),
@@ -57,7 +57,7 @@ namespace ChangeTracking
             }
 
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
-                new[] { typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager<T>), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
+                new[] { typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
                 target, _Options, new ChangeTrackingInterceptor<T>(status), new EditableObjectInterceptor<T>(notifyParentItemCanceled), new NotifyPropertyChangedInterceptor<T>());
             return (T)proxy;
         }

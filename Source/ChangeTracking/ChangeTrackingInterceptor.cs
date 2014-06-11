@@ -105,8 +105,10 @@ namespace ChangeTracking
                     StatusChanged -= (EventHandler)invocation.Arguments[0];
                     break;
                 case "Delete":
-                    ChangeTrackingStatus = ChangeStatus.Deleted;
-                    StatusChanged(invocation.InvocationTarget, EventArgs.Empty);
+                    invocation.ReturnValue = Delete(invocation.Proxy);
+                    break;
+                case "UnDelete":
+                    invocation.ReturnValue = UnDelete(invocation.Proxy);
                     break;
                 case "AcceptChanges":
                     AcceptChanges(invocation.Proxy);
@@ -160,6 +162,28 @@ namespace ChangeTracking
                 property.SetValue(original, _OriginalValueDictionary.TryGetValue(property.Name, out value) ? value : property.GetValue(target, null), null);
             }
             return original;
+        }
+
+        private bool Delete(object target)
+        {
+            if (ChangeTrackingStatus != ChangeStatus.Deleted)
+            {
+                ChangeTrackingStatus = ChangeStatus.Deleted;
+                StatusChanged(target, EventArgs.Empty);
+                return true;
+            }
+            return false;
+        }
+
+        private bool UnDelete(object target)
+        {
+            if (ChangeTrackingStatus == ChangeStatus.Deleted)
+            {
+                ChangeTrackingStatus = _OriginalValueDictionary.Count > 0 ? ChangeStatus.Changed : ChangeStatus.Unchanged;
+                StatusChanged(target, EventArgs.Empty);
+                return true;
+            }
+            return false;
         }
 
         private void AcceptChanges(object proxy)

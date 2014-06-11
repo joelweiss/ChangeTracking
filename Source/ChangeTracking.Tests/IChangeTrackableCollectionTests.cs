@@ -283,5 +283,20 @@ namespace ChangeTracking.Tests
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
             first.ShouldBeEquivalentTo(orderToMatch);
         }
+
+        [TestMethod]
+        public void UnDelete_Should_Move_Back_Item_From_DeletedItems_And_Change_Back_Status()
+        {
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            Order first = trackable.First();
+            trackable.Remove(first);
+            trackable.CastToIChangeTrackableCollection().UnDelete(first);
+
+            trackable.Should().Contain(first);
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().NotContain(first).And.BeEmpty();
+            first.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
+        }
     }
 }
