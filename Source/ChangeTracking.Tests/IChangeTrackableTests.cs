@@ -46,7 +46,7 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
             trackable.MonitorEvents();
 
-            trackable.CustumerNumber = "Test1";
+            trackable.CustomerNumber = "Test1";
 
             trackable.ShouldRaise("StatusChanged");
         }
@@ -58,7 +58,7 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
             trackable.MonitorEvents();
 
-            trackable.CustumerNumber = "Test";
+            trackable.CustomerNumber = "Test";
 
             trackable.ShouldNotRaise("StatusChanged");
         }
@@ -66,9 +66,9 @@ namespace ChangeTracking.Tests
         [TestMethod]
         public void Change_Property_From_Null_To_Value_Should_Not_Throw()
         {
-            var trackable = new Order { Id = 321, CustumerNumber = null }.AsTrackable();
+            var trackable = new Order { Id = 321, CustomerNumber = null }.AsTrackable();
 
-            trackable.Invoking(o => o.CustumerNumber = "Test").ShouldNotThrow<NullReferenceException>();
+            trackable.Invoking(o => o.CustomerNumber = "Test").ShouldNotThrow<NullReferenceException>();
         }
 
         [TestMethod]
@@ -77,9 +77,9 @@ namespace ChangeTracking.Tests
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
 
-            trackable.CustumerNumber = "Test1";
+            trackable.CustomerNumber = "Test1";
 
-            trackable.CastToIChangeTrackable().GetOriginalValue(o => o.CustumerNumber).Should().Be("Test");
+            trackable.CastToIChangeTrackable().GetOriginalValue(o => o.CustomerNumber).Should().Be("Test");
         }
 
         [TestMethod]
@@ -89,7 +89,7 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
 
             trackable.Id = 124;
-            trackable.CustumerNumber = "Test1";
+            trackable.CustomerNumber = "Test1";
 
             var original = trackable.CastToIChangeTrackable().GetOriginal();
             var newOne = Helper.GetOrder();
@@ -112,7 +112,7 @@ namespace ChangeTracking.Tests
             var order = Helper.GetOrder();
 
             var trackable = order.AsTrackable(ChangeStatus.Added);
-            trackable.CustumerNumber = "Test1";
+            trackable.CustomerNumber = "Test1";
 
             trackable.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
         }
@@ -124,7 +124,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable(ChangeStatus.Deleted);
 
-            trackable.Invoking(o => o.CustumerNumber = "Test1").ShouldThrow<InvalidOperationException>();
+            trackable.Invoking(o => o.CustomerNumber = "Test1").ShouldThrow<InvalidOperationException>();
         }
     }
 }

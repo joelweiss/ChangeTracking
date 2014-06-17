@@ -55,7 +55,7 @@ namespace ChangeTracking.Tests
 
             bindingList.AddNew();
             var withAddedCount = bindingList.Count;
-            var addedItem = bindingList.Cast<Order>().Single(o => o.CustumerNumber == null);
+            var addedItem = bindingList.Cast<Order>().Single(o => o.CustomerNumber == null);
             var editableObject = (System.ComponentModel.IEditableObject)addedItem;
             editableObject.CancelEdit();
 

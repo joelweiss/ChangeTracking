@@ -140,5 +140,15 @@ namespace ChangeTracking
                 return ChangedItems.Any() || AddedItems.Any() || DeletedItems.Any();
             }
         }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _WrappedTarget.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

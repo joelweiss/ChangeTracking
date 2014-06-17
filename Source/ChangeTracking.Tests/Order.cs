@@ -8,6 +8,6 @@ namespace ChangeTracking.Tests
     public class Order
     {
         public virtual int Id { get; set; }
-        public virtual string CustumerNumber { get; set; }
+        public virtual string CustomerNumber { get; set; }
     }
 }
