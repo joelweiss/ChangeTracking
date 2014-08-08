@@ -45,7 +45,7 @@ namespace ChangeTracking.Tests
             var orders = Helper.GetOrdersIList();
 
             orders[0] = orders[0].AsTrackable();
-            orders[0].CustumerNumber = "Test1";
+            orders[0].CustomerNumber = "Test1";
 
             orders.Invoking(list => list.AsTrackable()).ShouldThrow<InvalidOperationException>();
         }
@@ -66,7 +66,7 @@ namespace ChangeTracking.Tests
             var orders = Helper.GetOrdersIList();
 
             var trackable = orders.AsTrackable();
-            trackable.Add(new Order { Id = 999999999, CustumerNumber = "Custumer" });
+            trackable.Add(new Order { Id = 999999999, CustomerNumber = "Customer" });
 
             trackable.Single(o => o.Id == 999999999).Should().BeAssignableTo<IChangeTrackable<Order>>();
         }
@@ -77,7 +77,7 @@ namespace ChangeTracking.Tests
             var orders = Helper.GetOrdersIList();
 
             var trackable = orders.AsTrackable();
-            trackable.Add(new Order { Id = 999999999, CustumerNumber = "Custumer" });
+            trackable.Add(new Order { Id = 999999999, CustomerNumber = "Customer" });
 
             trackable.Single(o => o.Id == 999999999).CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
         }
@@ -88,7 +88,7 @@ namespace ChangeTracking.Tests
             IList<Order> list = new List<Order>();
 
             var trackable = list.AsTrackable();
-            trackable.Add(new Order { Id = 999999999, CustumerNumber = "Custumer" });
+            trackable.Add(new Order { Id = 999999999, CustomerNumber = "Customer" });
 
             trackable.Single(o => o.Id == 999999999).CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
         }
@@ -115,7 +115,7 @@ namespace ChangeTracking.Tests
             trackable.Remove(first);
 
             trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(1)
-                .And.OnlyContain(o => o.Id == first.Id && o.CustumerNumber == first.CustumerNumber);
+                .And.OnlyContain(o => o.Id == first.Id && o.CustomerNumber == first.CustomerNumber);
         }
 
         [TestMethod]
@@ -132,7 +132,7 @@ namespace ChangeTracking.Tests
             trackable.Remove(trackable.Single(o => o.Id == 999));
 
             trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(1)
-                .And.OnlyContain(o => o.Id == first.Id && o.CustumerNumber == first.CustumerNumber);
+                .And.OnlyContain(o => o.Id == first.Id && o.CustomerNumber == first.CustomerNumber);
         }
 
         [TestMethod]
@@ -161,7 +161,7 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var first = trackable.First();
             first.Id = 963;
-            first.CustumerNumber = "Testing";
+            first.CustomerNumber = "Testing";
             var collectionintf = trackable.CastToIChangeTrackableCollection();
             collectionintf.AcceptChanges();
 
@@ -176,13 +176,13 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var first = trackable.First();
             first.Id = 963;
-            first.CustumerNumber = "Testing";
+            first.CustomerNumber = "Testing";
             var itemIntf = first.CastToIChangeTrackable();
             var collectionintf = trackable.CastToIChangeTrackableCollection();
             int oldChangeStatusCount = collectionintf.ChangedItems.Count();
             collectionintf.AcceptChanges();
 
-            itemIntf.GetOriginalValue(c => c.CustumerNumber).Should().Be("Testing");
+            itemIntf.GetOriginalValue(c => c.CustomerNumber).Should().Be("Testing");
             itemIntf.GetOriginalValue(c => c.Id).Should().Be(963);
             oldChangeStatusCount.Should().Be(1);
             collectionintf.ChangedItems.Count().Should().Be(0);
@@ -214,7 +214,7 @@ namespace ChangeTracking.Tests
 
             var first = trackable.First();
             first.Id = 963;
-            first.CustumerNumber = "Testing";
+            first.CustomerNumber = "Testing";
             var intf = trackable.CastToIChangeTrackableCollection();
             var oldAnythingUnchanged = intf.ChangedItems.Any();
             intf.RejectChanges();
@@ -231,7 +231,7 @@ namespace ChangeTracking.Tests
 
             var first = trackable.First();
             first.Id = 963;
-            first.CustumerNumber = "Testing";
+            first.CustomerNumber = "Testing";
             var newOrder = Helper.GetOrder();
             newOrder.Id = 999;
             trackable.Add(newOrder);
@@ -242,7 +242,7 @@ namespace ChangeTracking.Tests
 
             intf.UnchangedItems.Should().Contain(i => ordersToMatch.SingleOrDefault(o =>
                 o.Id == i.Id &&
-                i.CustumerNumber == o.CustumerNumber &&
+                i.CustomerNumber == o.CustomerNumber &&
                 i.CastToIChangeTrackable().ChangeTrackingStatus == o.CastToIChangeTrackable().ChangeTrackingStatus) != null);
             intf.UnchangedItems.Count().Should().Be(ordersToMatch.Count);
         }
@@ -270,18 +270,42 @@ namespace ChangeTracking.Tests
 
             var first = orders.First();
             first.Id = 963;
-            first.CustumerNumber = "Testing";
+            first.CustomerNumber = "Testing";
             var collectionIntf = trackable.CastToIChangeTrackableCollection();
             collectionIntf.AcceptChanges();
             first.Id = 999;
-            first.CustumerNumber = "Testing 123";
+            first.CustomerNumber = "Testing 123";
             collectionIntf.RejectChanges();
             var intf = first.CastToIChangeTrackable();
-            var orderToMatch = new Order { Id = 963, CustumerNumber = "Testing" };
+            var orderToMatch = new Order { Id = 963, CustomerNumber = "Testing" };
 
             intf.GetOriginal().ShouldBeEquivalentTo(orderToMatch);
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
             first.ShouldBeEquivalentTo(orderToMatch);
+        }
+
+        [TestMethod]
+        public void UnDelete_Should_Move_Back_Item_From_DeletedItems_And_Change_Back_Status()
+        {
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            Order first = trackable.First();
+            trackable.Remove(first);
+            trackable.CastToIChangeTrackableCollection().UnDelete(first);
+
+            trackable.Should().Contain(first);
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().NotContain(first).And.BeEmpty();
+            first.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
+        }
+
+        [TestMethod]
+        public void Can_Enumerate_IChangeTrackableCollection()
+        {
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            trackable.Invoking(t => t.FirstOrDefault()).ShouldNotThrow();
         }
     }
 }

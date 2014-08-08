@@ -24,7 +24,7 @@ namespace ChangeTracking.Tests
                     list.Add(new Order
                     {
                         Id = 1,
-                        CustumerNumber = "Test"
+                        CustomerNumber = "Test"
                     });
                 }
             }
@@ -46,9 +46,9 @@ namespace ChangeTracking.Tests
             {
                 var order = noneTrackedList[i];
                 order.Id = 2;
-                order.CustumerNumber = "Test2";
+                order.CustomerNumber = "Test2";
                 var id = order.Id;
-                var cust = order.CustumerNumber;
+                var cust = order.CustomerNumber;
             }
             swNotTracked.Stop();
             TestContext.WriteLine("Write and Read {0:N0} none tracked objects: {1} ms", reps, swNotTracked.ElapsedMilliseconds);
@@ -59,9 +59,9 @@ namespace ChangeTracking.Tests
             {
                 var order = trackedList[i];
                 order.Id = 2;
-                order.CustumerNumber = "Test2";
+                order.CustomerNumber = "Test2";
                 var id = order.Id;
-                var cust = order.CustumerNumber;
+                var cust = order.CustomerNumber;
             }
             swTracked.Stop();
             TestContext.WriteLine("Write and Read {0:N0} tracked objects: {1} ms", reps, swTracked.ElapsedMilliseconds);

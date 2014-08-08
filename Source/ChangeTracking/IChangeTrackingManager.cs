@@ -5,8 +5,9 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    internal interface IChangeTrackingManager<T> where T : class
+    internal interface IChangeTrackingManager
     {
-        T Delete();
+        bool Delete();
+        bool UnDelete();
     }
 }

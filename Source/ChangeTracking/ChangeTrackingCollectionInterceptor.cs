@@ -55,9 +55,9 @@ namespace ChangeTracking
         private void DeleteItem(T item)
         {
             var currentStatus = item.CastToIChangeTrackable().ChangeTrackingStatus;
-            var manager = (IChangeTrackingManager<T>)item;
-            manager.Delete();
-            if (currentStatus != ChangeStatus.Added)
+            var manager = (IChangeTrackingManager)item;
+            bool deleteSuccess = manager.Delete();
+            if (deleteSuccess && currentStatus != ChangeStatus.Added)
             {
                 _DeletedItems.Add(item);
             }
@@ -86,6 +86,22 @@ namespace ChangeTracking
         public IEnumerable<T> DeletedItems
         {
             get { return _DeletedItems.Select(i => i); }
+        }
+
+        public bool UnDelete(T item)
+        {
+            var manager = (IChangeTrackingManager)item;
+            bool unDeleteSuccess = manager.UnDelete();
+            if (unDeleteSuccess)
+            {
+                bool removeSuccess = _DeletedItems.Remove(item);
+                if (removeSuccess)
+                {
+                    _WrappedTarget.Add(item);
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void AcceptChanges()
@@ -123,6 +139,16 @@ namespace ChangeTracking
             {
                 return ChangedItems.Any() || AddedItems.Any() || DeletedItems.Any();
             }
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _WrappedTarget.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

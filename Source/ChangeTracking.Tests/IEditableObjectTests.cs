@@ -30,10 +30,10 @@ namespace ChangeTracking.Tests
             var editableObject = (System.ComponentModel.IEditableObject)trackable;
 
             editableObject.BeginEdit();
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             editableObject.CancelEdit();
 
-            trackable.CustumerNumber.Should().Be("Test", because: "item was canceled");
+            trackable.CustomerNumber.Should().Be("Test", because: "item was canceled");
         }
 
         [TestMethod]
@@ -45,11 +45,11 @@ namespace ChangeTracking.Tests
             var editableObject = (System.ComponentModel.IEditableObject)trackable;
 
             editableObject.BeginEdit();
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             editableObject.EndEdit();
             editableObject.CancelEdit();
 
-            trackable.CustumerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
+            trackable.CustomerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
         }
 
         [TestMethod]
@@ -60,10 +60,10 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
             var editableObject = (System.ComponentModel.IEditableObject)trackable;
 
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             editableObject.CancelEdit();
 
-            trackable.CustumerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
+            trackable.CustomerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
         }
 
         [TestMethod]
@@ -73,7 +73,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             var intf = trackable.CastToIChangeTrackable();
 
             var oldChangeStatus = intf.ChangeTrackingStatus;
@@ -90,7 +90,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             var intf = trackable.CastToIChangeTrackable();
             intf.AcceptChanges();
 
@@ -105,7 +105,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             var intf = trackable.CastToIChangeTrackable();
             var oldChangeStatus = intf.ChangeTrackingStatus;
             intf.RejectChanges();
@@ -121,7 +121,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             var intf = trackable.CastToIChangeTrackable();
             intf.RejectChanges();
 
@@ -135,7 +135,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            trackable.CustumerNumber = "Testing";
+            trackable.CustomerNumber = "Testing";
             var intf = trackable.CastToIChangeTrackable();
             intf.AcceptChanges();
 

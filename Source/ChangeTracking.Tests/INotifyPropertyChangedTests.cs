@@ -28,7 +28,7 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
             trackable.MonitorEvents();
 
-            trackable.CustumerNumber = "Test1";
+            trackable.CustomerNumber = "Test1";
 
             trackable.ShouldRaise("PropertyChanged");
         }

@@ -14,7 +14,7 @@ namespace ChangeTracking.Tests
             return new Order
             {
                 Id = 1,
-                CustumerNumber = "Test"
+                CustomerNumber = "Test"
             };
         }
 
