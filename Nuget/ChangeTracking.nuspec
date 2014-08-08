@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
     <metadata>
         <id>ChangeTracking</id>
-        <version>1.0.0-beta</version>
+        <version>1.0.0</version>
         <title>Change Tracking</title>
         <authors>Joel Weiss</authors>
         <licenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md</licenseUrl>

@@ -78,19 +78,24 @@ trackable.RejectChanges();
 Requirements and restrictions
 --------------------------------
 
-.net 4 and above
-#####For Plain objects
-Your class must not be `sealed` and all members in your class must be `public virtual`
-```csharp
-public class Order
-{
-    public virtual int Id { get; set; }
-    public virtual string CustumerNumber { get; set; }
-}
-```
-#####For Collections 
-You can only assign the created proxy to one of the implemented interfaces, i.e. `ICollection<T>`, `IList<T>` and `IBindingList`, and the `AsTrackable<T>()` will choose the correct extennsion method only if called on `IList<T>`, `IList`, `ICollection<T>` and `ICollection`.
+* .net 4 and above
 
-```csharp
-IList<Order> orders = new List<Order>().AsTrackable();
-```
+#####For Plain objects
+* Your class must not be `sealed` and all members in your class must be `public virtual`
+
+	```csharp
+	public class Order
+	{
+		public virtual int Id { get; set; }
+		public virtual string CustumerNumber { get; set; }
+	}
+	```
+* Does not support complex objects as properties.
+* Does not support collections as properties.
+
+#####For Collections 
+* You can only assign the created proxy to one of the implemented interfaces, i.e. `ICollection<T>`, `IList<T>` and `IBindingList`, and the `AsTrackable<T>()` will choose the correct extennsion method only if called on `IList<T>`, `IList`, `ICollection<T>` and `ICollection`.
+
+	```csharp
+	IList<Order> orders = new List<Order>().AsTrackable();
+	```
