@@ -92,8 +92,7 @@ namespace ChangeTracking
             switch (invocation.Method.Name)
             {
                 case "GetOriginalValue":
-                    Type returnType = ((MemberExpression)((LambdaExpression)invocation.Arguments[0]).Body).Type;
-                    invocation.ReturnValue = GetType().GetMethod("GetOriginalValue", BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(returnType).Invoke(this, new[] { invocation.Proxy, invocation.Arguments[0] });
+                    invocation.ReturnValue = ((dynamic)this).GetOriginalValue((T)invocation.Proxy, (dynamic)invocation.Arguments[0]);
                     break;
                 case "GetOriginal":
                     invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
@@ -146,6 +145,16 @@ namespace ChangeTracking
             {
                 return selector.Compile()(target);
             }
+        }
+
+        private object GetOriginalValue(T target, string propertyName)
+        {
+            object value;
+            if (!_OriginalValueDictionary.TryGetValue(propertyName, out value))
+            {
+                value = _Properties[propertyName].GetValue(target, null);
+            }
+            return value;
         }
 
         private T GetOriginal(T target)

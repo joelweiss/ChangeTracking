@@ -83,6 +83,29 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
+        public void GetOriginalValue_Generic_By_Property_Name_Should_Return_Original_Value()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.CustomerNumber = "Test1";
+
+            trackable.CastToIChangeTrackable().GetOriginalValue<string>("CustomerNumber").Should().Be("Test");
+        }
+
+
+        [TestMethod]
+        public void GetOriginalValue_By_Property_Name_Should_Return_Original_Value()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.CustomerNumber = "Test1";
+
+            trackable.CastToIChangeTrackable().GetOriginalValue("CustomerNumber").Should().Be("Test");
+        }
+
+        [TestMethod]
         public void GetOriginal_Should_Return_Original()
         {
             var order = Helper.GetOrder();
