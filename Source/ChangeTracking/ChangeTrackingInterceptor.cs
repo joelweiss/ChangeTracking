@@ -152,7 +152,14 @@ namespace ChangeTracking
             object value;
             if (!_OriginalValueDictionary.TryGetValue(propertyName, out value))
             {
-                value = _Properties[propertyName].GetValue(target, null);
+                try
+                {
+                    value = _Properties[propertyName].GetValue(target, null);
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    throw new Exception(string.Format("\"{0}\" is not a valid property name of type \"{1}\"", propertyName, typeof(T)), ex);
+                }
             }
             return value;
         }
