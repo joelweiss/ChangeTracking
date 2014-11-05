@@ -158,7 +158,7 @@ namespace ChangeTracking
                 }
                 catch (KeyNotFoundException ex)
                 {
-                    throw new Exception(string.Format("\"{0}\" is not a valid property name of type \"{1}\"", propertyName, typeof(T)), ex);
+                    throw new ArgumentOutOfRangeException(string.Format("\"{0}\" is not a valid property name of type \"{1}\"", propertyName, typeof(T)), ex);
                 }
             }
             return value;
