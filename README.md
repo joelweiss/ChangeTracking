@@ -1,7 +1,9 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/n9j44hcpe2wmkkgd?svg=true)](https://ci.appveyor.com/project/joelweiss/changetracking)
+
 #ChangeTracking
 
 Track changes in your POCO objects, and in your collections.
-By using [Castle Dynamic Proxy](http://www.castleproject.org/projects/dynamicproxy/) to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the `AsTrackable()` extension method, you get automatic change tracking, and cancellation.
+By using [Castle Dynamic Proxy](http://www.castleproject.org/projects/dynamicproxy/) to create proxies of your classes at runtime, you can use your objects just like you used to, and just by calling the `AsTrackable()` extension method, you get automatic change tracking, and cancellation.
 
 All trackable POCOs implement [`IChangeTrackable<T>`](https://github.com/joelweiss/ChangeTracking/blob/master/Source/ChangeTracking/IChangeTrackable.cs), [`IRevertibleChangeTracking`](http://msdn.microsoft.com/en-us/library/vstudio/system.componentmodel.irevertiblechangetracking.aspx), [`IChangeTracking`](http://msdn.microsoft.com/en-us/library/vstudio/system.componentmodel.ichangetracking.aspx), [`IEditableObject`](http://msdn.microsoft.com/en-us/library/system.componentmodel.ieditableobject.aspx) and [`INotifyPropertyChanged`](http://msdn.microsoft.com/en-us/library/system.componentmodel.inotifypropertychanged.aspx).
 
