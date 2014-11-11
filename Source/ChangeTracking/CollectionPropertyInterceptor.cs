@@ -79,7 +79,7 @@ namespace ChangeTracking
                     {
                         newValue = null;
                     }
-                    else if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackable<>)) != null)
+                    else if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackableCollection<>)) != null)
                     {
                         newValue = invocation.Arguments[0];
                     }

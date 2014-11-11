@@ -581,6 +581,47 @@ namespace ChangeTracking.Tests
 
             trackable.ShouldNotRaise("StatusChanged");
         }
- 
+
+        [TestMethod]
+        public void When_CollectionProperty_Children_Trackable_Set_CollectionProperty_And_Change_Collection_Should_Raise_StatusChanged_Event()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            trackable.OrderDetails = new List<OrderDetail>();
+            trackable.CastToIChangeTrackable().AcceptChanges();
+            trackable.MonitorEvents();
+
+            trackable.OrderDetails.Add(new OrderDetail());
+
+            trackable.ShouldRaise("StatusChanged");
+        }
+
+        [TestMethod]
+        public void When_CollectionProperty_Children_Trackable_Set_CollectionProperty_And_Change_Collection_Item_Property_Should_Raise_StatusChanged_Event()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            trackable.OrderDetails = new List<OrderDetail> { new OrderDetail() };
+            trackable.CastToIChangeTrackable().AcceptChanges();
+            trackable.MonitorEvents();
+
+            trackable.OrderDetails[0].OrderDetailId = 123;
+
+            trackable.ShouldRaise("StatusChanged");
+        }
+
+        [TestMethod]
+        public void When_ComplexProperty_Children_Trackable_Set_CoomplexProperty_And_Change_Property_Should_Raise_StatusChanged_Event()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.Address = new Address();
+            trackable.CastToIChangeTrackable().AcceptChanges();
+            trackable.MonitorEvents();
+            trackable.Address.AddressId = 123;
+
+            trackable.ShouldRaise("StatusChanged");
+        }
     }
 }
