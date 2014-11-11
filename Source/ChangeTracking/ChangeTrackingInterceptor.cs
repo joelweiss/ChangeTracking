@@ -82,8 +82,7 @@ namespace ChangeTracking
             switch (invocation.Method.Name)
             {
                 case "GetOriginalValue":
-                    Type returnType = ((MemberExpression)((LambdaExpression)invocation.Arguments[0]).Body).Type;
-                    invocation.ReturnValue = GetType().GetMethod("GetOriginalValue", BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(returnType).Invoke(this, new[] { invocation.Proxy, invocation.Arguments[0] });
+                    invocation.ReturnValue = ((dynamic)this).GetOriginalValue((T)invocation.Proxy, (dynamic)invocation.Arguments[0]);
                     break;
                 case "GetOriginal":
                     invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
@@ -110,6 +109,23 @@ namespace ChangeTracking
                     invocation.Proceed();
                     break;
             }
+        }
+
+        private object GetOriginalValue(T target, string propertyName)
+        {
+            object value;
+            if (!_OriginalValueDictionary.TryGetValue(propertyName, out value))
+            {
+                try
+                {
+                    value = _Properties[propertyName].GetValue(target, null);
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    throw new ArgumentOutOfRangeException(string.Format("\"{0}\" is not a valid property name of type \"{1}\"", propertyName, typeof(T)), ex);
+                }
+            }
+            return value;
         }
 
         private TResult GetOriginalValue<TResult>(T target, Expression<Func<T, TResult>> selector)
@@ -305,7 +321,7 @@ namespace ChangeTracking
                 }
             }
         }
-                
+
         private ChangeStatus GetNewChangeStatus(object sender)
         {
             return _OriginalValueDictionary.Count == 0 && GetChildren(sender).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
