@@ -6,11 +6,8 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    public interface IChangeTrackable<T> : System.ComponentModel.IRevertibleChangeTracking
+    public interface IChangeTrackable<T> : IChangeTrackable, System.ComponentModel.IRevertibleChangeTracking
     {
-        event EventHandler StatusChanged;
-        ChangeStatus ChangeTrackingStatus { get; }
-
         /// <summary>
         /// Gets the original value of a given property.
         /// </summary>
@@ -30,5 +27,16 @@ namespace ChangeTracking
         /// <returns></returns>
         /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>
         T GetOriginal();
+    }
+
+    public interface IChangeTrackable
+    {
+        event EventHandler StatusChanged;
+        ChangeStatus ChangeTrackingStatus { get; }
+    }
+
+    public interface IChangeTrackableInternal
+    {
+        object GetOriginal();
     }
 }

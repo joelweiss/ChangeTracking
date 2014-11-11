@@ -14,7 +14,25 @@ namespace ChangeTracking.Tests
             return new Order
             {
                 Id = 1,
-                CustomerNumber = "Test"
+                CustomerNumber = "Test",
+                Address = new Address
+                {
+                    AddressId = 1,
+                    City = "New York"
+                },
+                OrderDetails = new List<OrderDetail>
+                {
+                    new OrderDetail
+                    {
+                        OrderDetailId = 1,
+                        ItemNo = "Item123"
+                    },
+                    new OrderDetail
+                    {
+                        OrderDetailId = 2,
+                        ItemNo = "Item369"
+                    }
+                }
             };
         }
 

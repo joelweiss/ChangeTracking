@@ -85,10 +85,10 @@ namespace ChangeTracking.Tests
         [TestMethod]
         public void When_Adding_To_Colletion_Via_Indexer_Status_Should_Be_Added()
         {
-            IList<Order> list = new List<Order>();
+            IList<Order> list = Helper.GetOrdersIList();
 
             var trackable = list.AsTrackable();
-            trackable.Add(new Order { Id = 999999999, CustomerNumber = "Customer" });
+            trackable[0] = new Order { Id = 999999999, CustomerNumber = "Customer" };
 
             trackable.Single(o => o.Id == 999999999).CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
         }
@@ -245,6 +245,7 @@ namespace ChangeTracking.Tests
                 i.CustomerNumber == o.CustomerNumber &&
                 i.CastToIChangeTrackable().ChangeTrackingStatus == o.CastToIChangeTrackable().ChangeTrackingStatus) != null);
             intf.UnchangedItems.Count().Should().Be(ordersToMatch.Count);
+            intf.UnchangedItems.Count().Should().Be(intf.Count());
         }
 
         [TestMethod]
@@ -277,11 +278,12 @@ namespace ChangeTracking.Tests
             first.CustomerNumber = "Testing 123";
             collectionIntf.RejectChanges();
             var intf = first.CastToIChangeTrackable();
-            var orderToMatch = new Order { Id = 963, CustomerNumber = "Testing" };
+            var orderToMatch = Helper.GetOrder();
+            orderToMatch.Id = 963;
+            orderToMatch.CustomerNumber = "Testing";
 
             intf.GetOriginal().ShouldBeEquivalentTo(orderToMatch);
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
-            first.ShouldBeEquivalentTo(orderToMatch);
         }
 
         [TestMethod]

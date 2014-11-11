@@ -6,9 +6,9 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    public class ChangeTrackingInterceptorSelector : IInterceptorSelector
+    internal class ChangeTrackingInterceptorSelector : IInterceptorSelector
     {
-        public IInterceptor[] SelectInterceptors(Type type, System.Reflection.MethodInfo method, IInterceptor[] interceptors)
+        IInterceptor[] IInterceptorSelector.SelectInterceptors(Type type, System.Reflection.MethodInfo method, IInterceptor[] interceptors)
         {
             return interceptors;
         }

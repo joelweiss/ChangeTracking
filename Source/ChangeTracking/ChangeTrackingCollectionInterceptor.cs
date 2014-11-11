@@ -14,7 +14,9 @@ namespace ChangeTracking
         private static HashSet<string> _ImplementedMethods;
         private static HashSet<string> _BindingListImplementedMethods;
         private static HashSet<string> _IBindingListImplementedMethods;
-
+        private readonly bool _MakeComplexPropertiesTrackable;
+        private readonly bool _MakeCollectionPropertiesTrackable;
+        
         static ChangeTrackingCollectionInterceptor()
         {
             _ImplementedMethods = new HashSet<string>(typeof(ChangeTrackingCollectionInterceptor<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
@@ -22,16 +24,18 @@ namespace ChangeTracking
             _IBindingListImplementedMethods = new HashSet<string>(typeof(ChangeTrackingBindingList<T>).GetInterfaceMap(typeof(System.ComponentModel.IBindingList)).TargetMethods.Where(mi => mi.IsPrivate).Select(mi => mi.Name.Substring(mi.Name.LastIndexOf('.') + 1)));
         }
 
-        public ChangeTrackingCollectionInterceptor(IList<T> target)
+        internal ChangeTrackingCollectionInterceptor(IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
         {
+            _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
+            _MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
             for (int i = 0; i < target.Count; i++)
             {
-                target[i] = target[i].AsTrackable(notifyParentItemCanceled: ItemCanceled);
+                target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
-            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled);
+            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             _DeletedItems = new List<T>();
         }
-
+        
         public void Intercept(IInvocation invocation)
         {
             if (_ImplementedMethods.Contains(invocation.Method.Name))

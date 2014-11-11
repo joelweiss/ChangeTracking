@@ -65,82 +65,40 @@ namespace ChangeTracking.Tests
 
             trackable.CustomerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
         }
-
+        
         [TestMethod]
-        public void AcceptChanges_Should_Status_Be_Unchanged()
+        public void AsTrackable_Should_Make_Object_Complex_Property_Implement_IEditableObject()
         {
             var order = Helper.GetOrder();
 
-            var trackable = order.AsTrackable();
-            trackable.Id = 963;
-            trackable.CustomerNumber = "Testing";
-            var intf = trackable.CastToIChangeTrackable();
+            Order trackable = order.AsTrackable();
 
-            var oldChangeStatus = intf.ChangeTrackingStatus;
-            intf.RejectChanges();
-
-            oldChangeStatus.Should().Be(ChangeStatus.Changed);
-            intf.ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
+            trackable.Address.Should().BeAssignableTo<System.ComponentModel.IEditableObject>();
         }
 
         [TestMethod]
-        public void AcceptChanges_Should_AcceptChanges()
+        public void AsTrackable_Should_Not_Make_Object_Complex_Property_Implement_IEditableObject_If_Passed_False()
         {
             var order = Helper.GetOrder();
 
-            var trackable = order.AsTrackable();
-            trackable.Id = 963;
-            trackable.CustomerNumber = "Testing";
-            var intf = trackable.CastToIChangeTrackable();
-            intf.AcceptChanges();
+            Order trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
 
-            intf.GetOriginal().ShouldBeEquivalentTo(intf.GetOriginal());
-            intf.GetOriginalValue(o => o.Id).Should().Be(963);
+            (trackable.Address as System.ComponentModel.IEditableObject).Should().BeNull();
         }
 
         [TestMethod]
-        public void RejectChanges_Should_Status_Be_Unchanged()
+        public void CancelEdit_On_Item_Should_Revert_Changes_On_Complex_Property()
         {
             var order = Helper.GetOrder();
 
             var trackable = order.AsTrackable();
-            trackable.Id = 963;
-            trackable.CustomerNumber = "Testing";
-            var intf = trackable.CastToIChangeTrackable();
-            var oldChangeStatus = intf.ChangeTrackingStatus;
-            intf.RejectChanges();
+            var editableObject = (System.ComponentModel.IEditableObject)trackable;
 
-            oldChangeStatus.Should().Be(ChangeStatus.Changed);
-            intf.ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
-        }
+            editableObject.BeginEdit();
+            trackable.Address.City = "Chicago";
+            editableObject.CancelEdit();
 
-        [TestMethod]
-        public void RejectChanges_Should_RejectChanges()
-        {
-            var order = Helper.GetOrder();
-
-            var trackable = order.AsTrackable();
-            trackable.Id = 963;
-            trackable.CustomerNumber = "Testing";
-            var intf = trackable.CastToIChangeTrackable();
-            intf.RejectChanges();
-
-            trackable.ShouldBeEquivalentTo(Helper.GetOrder());
-        }
-
-        [TestMethod]
-        public void RejectChanges_Should_AcceptChanges_Only_After_Last_AcceptChanges()
-        {
-            var order = Helper.GetOrder();
-
-            var trackable = order.AsTrackable();
-            trackable.Id = 963;
-            trackable.CustomerNumber = "Testing";
-            var intf = trackable.CastToIChangeTrackable();
-            intf.AcceptChanges();
-
-            intf.GetOriginal().ShouldBeEquivalentTo(intf.GetOriginal());
-            intf.GetOriginalValue(o => o.Id).Should().Be(963);
+            trackable.Address.City.Should().Be("New York", because: "parent item was canceled");
         }
     }
 }

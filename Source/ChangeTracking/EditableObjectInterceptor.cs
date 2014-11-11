@@ -19,12 +19,12 @@ namespace ChangeTracking
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(pi => pi.Name);
         }
 
-        public EditableObjectInterceptor()
+        internal EditableObjectInterceptor()
         {
             _BeforeEditValues = new Dictionary<string, object>();
         }
 
-        public EditableObjectInterceptor(Action<T> notifyParentItemCanceled)
+        internal EditableObjectInterceptor(Action<T> notifyParentItemCanceled)
             : this()
         {
             _NotifyParentItemCanceled = notifyParentItemCanceled;
@@ -40,8 +40,10 @@ namespace ChangeTracking
                     string propName = invocation.Method.PropertyName();
                     if (!_BeforeEditValues.ContainsKey(propName))
                     {
-                        var oldValue = _Properties[propName].GetValue(invocation.InvocationTarget, null);
-                        if (!Equals(oldValue, invocation.Arguments[0]))
+                        var oldValue = _Properties[propName].GetValue(invocation.Proxy, null);
+                        invocation.Proceed();
+                        var newValue = _Properties[propName].GetValue(invocation.Proxy, null);
+                        if (!Equals(oldValue, newValue))
                         {
                             _BeforeEditValues.Add(propName, oldValue);
                         }
@@ -49,12 +51,13 @@ namespace ChangeTracking
                     else
                     {
                         var originalValue = _BeforeEditValues[propName];
-                        if (Equals(originalValue, invocation.Arguments[0]))
+                        invocation.Proceed();
+                        var newValue = _Properties[propName].GetValue(invocation.Proxy, null);
+                        if (Equals(originalValue, newValue))
                         {
                             _BeforeEditValues.Remove(propName);
                         }
                     }
-                    invocation.Proceed();
                     return;
                 }
                 else if (invocation.Method.IsGetter())
@@ -66,13 +69,13 @@ namespace ChangeTracking
             switch (invocation.Method.Name)
             {
                 case "BeginEdit":
-                    BeginEdit();
+                    BeginEdit(invocation.Proxy);
                     break;
                 case "CancelEdit":
                     CancelEdit(invocation.Proxy);
                     break;
                 case "EndEdit":
-                    EndEdit();
+                    EndEdit(invocation.Proxy);
                     break;
                 default:
                     invocation.Proceed();
@@ -80,13 +83,21 @@ namespace ChangeTracking
             }
         }
 
-        private void BeginEdit()
+        private void BeginEdit(object proxy)
         {
+            foreach (var child in GetChildren(proxy))
+            {
+                child.BeginEdit();
+            }
             _IsEditing = true;
         }
 
         private void CancelEdit(object proxy)
         {
+            foreach (var child in GetChildren(proxy))
+            {
+                child.CancelEdit();
+            }
             if (_IsEditing)
             {
                 _IsEditing = false;
@@ -101,13 +112,24 @@ namespace ChangeTracking
             }
         }
 
-        private void EndEdit()
+        private void EndEdit(object proxy)
         {
+            foreach (var child in GetChildren(proxy))
+            {
+                child.EndEdit();
+            }
             if (_IsEditing == true)
             {
                 _IsEditing = false;
                 _BeforeEditValues.Clear();
             }
+        }
+
+        private static IEnumerable<System.ComponentModel.IEditableObject> GetChildren(object proxy)
+        {
+            return ((ICollectionPropertyTrackable)proxy).CollectionPropertyTrackables
+                .Concat(((IComplexPropertyTrackable)proxy).ComplexPropertyTrackables)
+                .OfType<System.ComponentModel.IEditableObject>();
         }
     }
 }
