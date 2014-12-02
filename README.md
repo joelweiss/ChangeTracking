@@ -17,7 +17,29 @@ Example
 ```csharp
 using ChangeTracking;
 //...
-Order order = new Order { Id = 1, CustumerNumber = "Test" };
+Order order = new Order 
+{ 
+	Id = 1,
+	CustumerNumber = "Test",
+	Address = new Address
+	{
+		AddressId = 1,
+		City = "New York"
+	},
+	OrderDetails = new List<OrderDetail>
+	{
+		new OrderDetail
+		{
+			OrderDetailId = 1,
+			ItemNo = "Item123"
+		},
+		new OrderDetail
+		{
+			OrderDetailId = 2,
+			ItemNo = "Item369"
+		}
+	}
+};
 Order trackedOrder = order.AsTrackable();
 ```
 And here is how you get to the tracked info.
@@ -45,6 +67,15 @@ trackable.RejectChanges();
 
 //Calling AcceptChanges will accept all the changes you made, clears the original values and set ChangeTrackingStatus to Unchanged
 trackable.AcceptChanges();
+```
+By default complex properties and collection properties will be tracked (if it can be made trackable) as well.
+if you do not wish to track them you can set it when creating the trackable.
+```csharp
+var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
+```
+or
+```csharp
+var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
 ```
 ###And on a collection
 ```csharp
@@ -90,10 +121,10 @@ Requirements and restrictions
 	{
 		public virtual int Id { get; set; }
 		public virtual string CustumerNumber { get; set; }
+        public virtual Address  Address { get; set; }
+        public virtual IList<OrderDetail> OrderDetails { get; set; }
 	}
 	```
-* Does not support complex objects as properties.
-* Does not support collections as properties.
 
 #####For Collections 
 * You can only assign the created proxy to one of the implemented interfaces, i.e. `ICollection<T>`, `IList<T>` and `IBindingList`, and the `AsTrackable<T>()` will choose the correct extennsion method only if called on `IList<T>`, `IList`, `ICollection<T>` and `ICollection`.
