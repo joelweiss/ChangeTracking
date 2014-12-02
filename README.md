@@ -75,7 +75,7 @@ var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
 ```
 or
 ```csharp
-var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
+var trackable = order.AsTrackable(makeCollectionPropertiesTrackable: false);
 ```
 ###And on a collection
 ```csharp
