@@ -9,6 +9,10 @@ All trackable POCOs implement [`IChangeTrackable<T>`](https://github.com/joelwei
 
 And all trackable collections implement [`IChangeTrackableCollection<T>`](https://github.com/joelweiss/ChangeTracking/blob/master/Source/ChangeTracking/IChangeTrackableCollection.cs), [`IBindingList`](http://msdn.microsoft.com/en-us/library/vstudio/system.componentmodel.ibindinglist.aspx) [`ICancelAddNew`](http://msdn.microsoft.com/en-us/library/vstudio/system.componentmodel.icanceladdnew.aspx), `IList<T>`, `IList`, `ICollection<T>`, `ICollection`, `IEnumerable<T>` and `IEnumerable`
 
+# Installation
+```
+PM> Install-Package ChangeTracking
+```
 
 Example
 ---------
