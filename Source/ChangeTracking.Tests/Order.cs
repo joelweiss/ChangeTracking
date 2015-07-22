@@ -11,5 +11,10 @@ namespace ChangeTracking.Tests
         public virtual string CustomerNumber { get; set; }
         public virtual Address  Address { get; set; }
         public virtual IList<OrderDetail> OrderDetails { get; set; }
+
+        public Order CreateOrder()
+        {
+            return new Order();
+        }
     }
 }
