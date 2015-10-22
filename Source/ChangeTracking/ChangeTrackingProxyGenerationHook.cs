@@ -1,24 +1,25 @@
 ﻿using Castle.DynamicProxy;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Dynamic;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
     public class ChangeTrackingProxyGenerationHook : IProxyGenerationHook
     {
-        private static HashSet<string> _MethodsToSkip;
+        private readonly static HashSet<string> _MethodsToSkip;
+        private readonly static HashSet<Type> _TypesToSkip;
 
         static ChangeTrackingProxyGenerationHook()
         {
             _MethodsToSkip = new HashSet<string> { "Equals", "GetType", "ToString", "GetHashCode" };
+            _TypesToSkip = new HashSet<Type> { typeof(DynamicObject) };
         }
 
         public void MethodsInspected() { }
 
-        public void NonProxyableMemberNotification(Type type, System.Reflection.MemberInfo memberInfo)
+        public void NonProxyableMemberNotification(Type type, MemberInfo memberInfo)
         {
             var method = memberInfo as MethodInfo;
             if (method != null && method.IsProperty())
@@ -27,9 +28,11 @@ namespace ChangeTracking
             }
         }
 
-        public bool ShouldInterceptMethod(Type type, System.Reflection.MethodInfo methodInfo)
+        public bool ShouldInterceptMethod(Type type, MethodInfo methodInfo)
         {
-            return !_MethodsToSkip.Contains(methodInfo.Name);
+            return !_TypesToSkip.Contains(methodInfo.DeclaringType)
+                && !_TypesToSkip.Contains(methodInfo.GetBaseDefinition().DeclaringType)
+                && !_MethodsToSkip.Contains(methodInfo.Name);
         }
 
         public override bool Equals(object obj)
