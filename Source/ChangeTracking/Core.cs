@@ -95,7 +95,7 @@ namespace ChangeTracking
         public static ICollection<T> AsTrackable<T>(this ICollection<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
         {
             var list = target as IList<T>;
-            if (target == null)
+            if (list == null)
             {
                 list = target.ToList();
             }

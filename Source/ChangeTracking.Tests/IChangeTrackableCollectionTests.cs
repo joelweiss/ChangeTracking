@@ -309,5 +309,16 @@ namespace ChangeTracking.Tests
 
             trackable.Invoking(t => t.FirstOrDefault()).ShouldNotThrow();
         }
+
+        [TestMethod]
+        public void AsTrackable_On_ICollection_Should_Convert_ToIList_Internally()
+        {
+            IList<Order> orders = Helper.GetOrdersIList();
+            ICollection<Order> ordersSet = new System.Collections.ObjectModel.Collection<Order>(orders);
+
+            ICollection<Order> trackable = ordersSet.AsTrackable();
+
+            trackable.Should().BeAssignableTo<IChangeTrackableCollection<Order>>();
+        }
     }
 }
