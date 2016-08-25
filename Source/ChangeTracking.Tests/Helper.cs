@@ -36,34 +36,6 @@ namespace ChangeTracking.Tests
             };
         }
 
-        internal static OrderWithCalculatedFields GetOrderWithCalculatedFields(int id = 1, string custumerNumber = "Test")
-        {
-            return new OrderWithCalculatedFields
-            {
-                Id = 1,
-                CustomerNumber = "Test",
-                Address = new Address
-                {
-                    AddressId = 1,
-                    City = "New York"
-                },
-                OrderDetails = new List<OrderDetail>
-                {
-                    new OrderDetail
-                    {
-                        OrderDetailId = 1,
-                        ItemNo = "Item123"
-                    },
-                    new OrderDetail
-                    {
-                        OrderDetailId = 2,
-                        ItemNo = "Item369"
-                    }
-                }
-            };
-        }
-
-
         internal static IList<Order> GetOrdersIList()
         {
             return Enumerable.Range(0, 10).Select(i =>

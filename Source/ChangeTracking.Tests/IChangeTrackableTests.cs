@@ -120,20 +120,6 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void GetOriginal_WithCalculated_Should_Return_Original()
-        {
-            var order = Helper.GetOrderWithCalculatedFields();
-            var trackable = order.AsTrackable();
-
-            trackable.Id = 124;
-            trackable.CustomerNumber = "Test1";
-
-            var original = trackable.CastToIChangeTrackable().GetOriginal();
-            var newOne = Helper.GetOrderWithCalculatedFields();
-            original.ShouldBeEquivalentTo(newOne);
-        }
-
-        [TestMethod]
         public void When_Setting_Status_Should_Be_That_Status()
         {
             var order = Helper.GetOrder();
