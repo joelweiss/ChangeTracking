@@ -19,7 +19,7 @@ namespace ChangeTracking
 
         static ChangeTrackingInterceptor()
         {
-            _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(pi => pi.Name);
+            _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite).ToDictionary(pi => pi.Name);
         }
 
         internal ChangeTrackingInterceptor(ChangeStatus status)
