@@ -61,7 +61,7 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void When_Adding_To_Colletion_Should_Be_IChangeTracableTrackable()
+        public void When_Adding_To_Collection_Should_Be_IChangeTracableTrackable()
         {
             var orders = Helper.GetOrdersIList();
 
@@ -72,7 +72,7 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void When_Adding_To_Colletion_Status_Should_Be_Added()
+        public void When_Adding_To_Collection_Status_Should_Be_Added()
         {
             var orders = Helper.GetOrdersIList();
 
@@ -83,7 +83,7 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void When_Adding_To_Colletion_Via_Indexer_Status_Should_Be_Added()
+        public void When_Adding_To_Collection_Via_Indexer_Status_Should_Be_Added()
         {
             IList<Order> list = Helper.GetOrdersIList();
 
@@ -94,7 +94,7 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void When_Deleting_From_Colletion_Status_Should_Be_Deleted()
+        public void When_Deleting_From_Collection_Status_Should_Be_Deleted()
         {
             var orders = Helper.GetOrdersIList();
 
@@ -106,7 +106,7 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void When_Deleting_From_Colletion_Should_Be_Added_To_DeletedItems()
+        public void When_Deleting_From_Collection_Should_Be_Added_To_DeletedItems()
         {
             var orders = Helper.GetOrdersIList();
 
@@ -119,7 +119,7 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
-        public void When_Deleting_From_Colletion_Item_That_Status_Is_Added_Should_Not_Be_Added_To_DeletedItems()
+        public void When_Deleting_From_Collection_Item_That_Status_Is_Added_Should_Not_Be_Added_To_DeletedItems()
         {
             var orders = Helper.GetOrdersIList();
 
