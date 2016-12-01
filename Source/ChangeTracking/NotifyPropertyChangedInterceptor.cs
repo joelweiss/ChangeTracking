@@ -8,11 +8,13 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    internal class NotifyPropertyChangedInterceptor<T> : IInterceptor
+    internal class NotifyPropertyChangedInterceptor<T> : IInterceptor, IInterceptorSettings
     {
         private static Dictionary<string, PropertyInfo> _Properties;
         private readonly Dictionary<string, PropertyChangedEventHandler> _PropertyChangedEventHandlers;
         private readonly Dictionary<string, ListChangedEventHandler> _ListChangedEventHandlers;
+
+        public bool IsInitialized { get; set; }
 
         static NotifyPropertyChangedInterceptor()
         {
@@ -28,6 +30,10 @@ namespace ChangeTracking
 
         public void Intercept(IInvocation invocation)
         {
+            if (!IsInitialized)
+            {
+                return;
+            }
             if (invocation.Method.IsSetter())
             {
                 string propertyName = invocation.Method.PropertyName();

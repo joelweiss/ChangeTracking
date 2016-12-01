@@ -7,12 +7,14 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    internal sealed class EditableObjectInterceptor<T> : IInterceptor
+    internal sealed class EditableObjectInterceptor<T> : IInterceptor, IInterceptorSettings
     {
         private static Dictionary<string, PropertyInfo> _Properties;
         private readonly Dictionary<string, object> _BeforeEditValues;
         private readonly Action<T> _NotifyParentItemCanceled;
         private bool _IsEditing;
+
+        public bool IsInitialized { get; set; }
 
         static EditableObjectInterceptor()
         {
@@ -33,6 +35,10 @@ namespace ChangeTracking
 
         public void Intercept(IInvocation invocation)
         {
+            if (!IsInitialized)
+            {
+                return;
+            }
             if (_IsEditing == true)
             {
                 if (invocation.Method.IsSetter())

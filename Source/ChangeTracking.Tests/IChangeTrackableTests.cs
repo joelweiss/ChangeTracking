@@ -623,5 +623,15 @@ namespace ChangeTracking.Tests
 
             trackable.ShouldRaise("StatusChanged");
         }
+
+        [TestMethod]
+        public void When_Nothing_Is_Changed_Should_Be_Unchanged()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.CastToIChangeTrackable().IsChanged.Should().BeFalse();
+            trackable.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
+        }
     }
 }

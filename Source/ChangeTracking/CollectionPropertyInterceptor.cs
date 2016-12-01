@@ -7,7 +7,7 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    internal class CollectionPropertyInterceptor<T> : IInterceptor
+    internal class CollectionPropertyInterceptor<T> : IInterceptor, IInterceptorSettings
     {
         private static readonly List<PropertyInfo> _Properties;
         private static Dictionary<string, Action<IInvocation, Dictionary<string, object>, bool, bool>> _Actions;
@@ -15,6 +15,8 @@ namespace ChangeTracking
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
         private bool _AreAllPropertesTrackable;
+
+        public bool IsInitialized { get; set; }
 
         static CollectionPropertyInterceptor()
         {
@@ -105,6 +107,10 @@ namespace ChangeTracking
 
         public void Intercept(IInvocation invocation)
         {
+            if (!IsInitialized)
+            {
+                return;
+            }
             if (invocation.Method.Name == "get_CollectionPropertyTrackables")
             {
                 invocation.ReturnValue = CollectionPropertyTrackables(invocation.Proxy);

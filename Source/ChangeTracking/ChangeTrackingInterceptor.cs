@@ -8,7 +8,7 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    internal sealed class ChangeTrackingInterceptor<T> : IInterceptor where T : class
+    internal sealed class ChangeTrackingInterceptor<T> : IInterceptor, IInterceptorSettings where T : class
     {
         private Dictionary<string, object> _OriginalValueDictionary;
         private EventHandler _StatusChanged = delegate { };
@@ -16,6 +16,8 @@ namespace ChangeTracking
         private ChangeStatus _ChangeTrackingStatus;
         private readonly Dictionary<string, Delegate> _StatusChangedEventHandlers;
         private bool _InRejectChanges;
+
+        public bool IsInitialized { get; set; }
 
         static ChangeTrackingInterceptor()
         {
@@ -31,6 +33,10 @@ namespace ChangeTracking
 
         public void Intercept(IInvocation invocation)
         {
+            if (!IsInitialized)
+            {
+                return;
+            }
             if (invocation.Method.IsSetter() && !_InRejectChanges)
             {
                 if (_ChangeTrackingStatus == ChangeStatus.Deleted)

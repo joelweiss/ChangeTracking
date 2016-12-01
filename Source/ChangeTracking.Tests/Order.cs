@@ -7,6 +7,11 @@ namespace ChangeTracking.Tests
 {
     public class Order
     {
+        public Order()
+        {
+            OrderDetails = new List<OrderDetail>();
+        }
+
         public virtual int Id { get; set; }
         public virtual string CustomerNumber { get; set; }
         public virtual Address  Address { get; set; }

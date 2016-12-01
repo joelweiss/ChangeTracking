@@ -7,7 +7,7 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IChangeTrackableCollection<T> where T : class
+    internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IChangeTrackableCollection<T>, IInterceptorSettings where T : class
     {
         private ChangeTrackingBindingList<T> _WrappedTarget;
         private IList<T> _DeletedItems;
@@ -16,7 +16,9 @@ namespace ChangeTracking
         private static HashSet<string> _IBindingListImplementedMethods;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
-        
+
+        public bool IsInitialized { get; set; }
+
         static ChangeTrackingCollectionInterceptor()
         {
             _ImplementedMethods = new HashSet<string>(typeof(ChangeTrackingCollectionInterceptor<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
