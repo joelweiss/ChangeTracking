@@ -8,7 +8,7 @@ using System.Text;
 
 namespace ChangeTracking
 {
-    internal class NotifyPropertyChangedInterceptor<T> : IInterceptor, IInterceptorSettings
+    internal class NotifyPropertyChangedInterceptor<T> : IInterceptor, IInterceptorSettings where T : class
     {
         private static Dictionary<string, PropertyInfo> _Properties;
         private readonly Dictionary<string, PropertyChangedEventHandler> _PropertyChangedEventHandlers;
@@ -21,10 +21,11 @@ namespace ChangeTracking
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(pi => pi.Name);
         }
 
-        internal NotifyPropertyChangedInterceptor()
+        internal NotifyPropertyChangedInterceptor(ChangeTrackingInterceptor<T> changeTrackingInterceptor)
         {
             _PropertyChangedEventHandlers = new Dictionary<string, PropertyChangedEventHandler>();
             _ListChangedEventHandlers = new Dictionary<string, ListChangedEventHandler>();
+            changeTrackingInterceptor._StatusChanged += (o, e) => RaisePropertyChanged(o, nameof(IChangeTrackable.ChangeTrackingStatus));
             PropertyChanged += delegate { };
         }
 

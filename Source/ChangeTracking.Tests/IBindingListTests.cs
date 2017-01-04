@@ -46,6 +46,20 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
+        public void AsTrackable_On_Collection_Remove_Should_Raise_ListChanged()
+        {
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+
+            bindingList.MonitorEvents();
+            trackable.Remove(trackable[0]);
+
+            bindingList.ShouldRaise("ListChanged");
+        }
+
+        [TestMethod]
         public void CancelEdit_On_Item_Should_Remove_From_Collection()
         {
             var orders = Helper.GetOrdersIList();
@@ -74,6 +88,68 @@ namespace ChangeTracking.Tests
             ((Order)bindingList[0]).Id = 123;
 
             bindingList.ShouldRaise("ListChanged");
+        }        
+
+        [TestMethod]
+        public void AcceptChanges_On_Collection_Should_Raise_ListChanged()
+        {
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = trackable.First();
+            var bl = trackable as System.ComponentModel.IBindingList;
+            bl.ListChanged += (o, e) =>
+            {
+                ;
+            };
+            first.Id = 963;
+
+
+            trackable.MonitorEvents();
+            trackable.CastToIChangeTrackableCollection().AcceptChanges();            
+
+            trackable.ShouldRaise("ListChanged");
+        }
+
+        [TestMethod]
+        public void AcceptChanges_On_Collection_If_No_Changes_Should_Not_Raise_ListChanged()
+        {
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            trackable.MonitorEvents();
+            trackable.CastToIChangeTrackableCollection().AcceptChanges();
+
+            trackable.ShouldNotRaise("ListChanged");
+        }
+
+        [TestMethod]
+        public void RejectChanges_On_Collection_Should_Raise_ListChanged()
+        {
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = trackable.First();
+            first.Id = 963;
+
+            trackable.MonitorEvents();
+
+
+            trackable.CastToIChangeTrackableCollection().RejectChanges();
+
+            trackable.ShouldRaise("ListChanged");
+        }
+
+        [TestMethod]
+        public void RejectChanges_On_Collection_If_No_Changes_Should_Not_Raise_ListChanged()
+        {
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            trackable.MonitorEvents();
+            trackable.CastToIChangeTrackableCollection().RejectChanges();
+
+            trackable.ShouldNotRaise("ListChanged");
         }
     }
 }

@@ -11,7 +11,7 @@ namespace ChangeTracking
     internal sealed class ChangeTrackingInterceptor<T> : IInterceptor, IInterceptorSettings where T : class
     {
         private Dictionary<string, object> _OriginalValueDictionary;
-        private EventHandler _StatusChanged = delegate { };
+        internal EventHandler _StatusChanged = delegate { };
         private static Dictionary<string, PropertyInfo> _Properties;
         private ChangeStatus _ChangeTrackingStatus;
         private readonly Dictionary<string, Delegate> _StatusChangedEventHandlers;
