@@ -63,7 +63,7 @@ namespace ChangeTracking.Tests
         }
         
         [TestMethod]
-        public void Change_Property_On_Item_That_Implements_INotifyPropertyChangedd_In_Collection_Should_Raise_ListChanged()
+        public void Change_Property_On_Item_That_Implements_INotifyPropertyChanged_In_Collection_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
 

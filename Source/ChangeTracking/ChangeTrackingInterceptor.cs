@@ -305,11 +305,11 @@ namespace ChangeTracking
                     _StatusChangedEventHandlers.Add(propertyName, newHandler);
                     return;
                 }
-                var newCollictionChild = newValue as System.ComponentModel.IBindingList;
-                if (newCollictionChild != null)
+                var newCollectionChild = newValue as System.ComponentModel.IBindingList;
+                if (newCollectionChild != null)
                 {
                     System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
-                    newCollictionChild.ListChanged += newHandler;
+                    newCollectionChild.ListChanged += newHandler;
                     _StatusChangedEventHandlers.Add(propertyName, newHandler);
                 }
             }
