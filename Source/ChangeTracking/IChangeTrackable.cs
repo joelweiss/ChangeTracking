@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
 namespace ChangeTracking
 {
-    public interface IChangeTrackable<T> : IChangeTrackable, System.ComponentModel.IRevertibleChangeTracking
+    public interface IChangeTrackable<T> : IChangeTrackable, IRevertibleChangeTracking
     {
         /// <summary>
         /// Gets the original value of a given property.
@@ -44,13 +45,13 @@ namespace ChangeTracking
         T GetOriginal();
     }
 
-    public interface IChangeTrackable
+    public interface IChangeTrackable : INotifyPropertyChanged
     {
         event EventHandler StatusChanged;
         ChangeStatus ChangeTrackingStatus { get; }
     }
 
-    public interface IChangeTrackableInternal
+    internal interface IChangeTrackableInternal
     {
         object GetOriginal();
     }
