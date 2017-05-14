@@ -1,17 +1,13 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using FluentAssertions;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class IBindingListTests
     {
-        [TestMethod]
+#if NET452
+        [Fact]
         public void AsTrackable_On_Collection_Should_Make_It_ICancelAddNew()
         {
             var orders = Helper.GetOrdersIList();
@@ -21,7 +17,7 @@ namespace ChangeTracking.Tests
             trackable.Should().BeAssignableTo<System.ComponentModel.ICancelAddNew>();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_Should_Make_It_IBindingList()
         {
             var orders = Helper.GetOrdersIList();
@@ -31,7 +27,7 @@ namespace ChangeTracking.Tests
             trackable.Should().BeAssignableTo<System.ComponentModel.IBindingList>();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_AddNew_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -45,7 +41,7 @@ namespace ChangeTracking.Tests
             bindingList.ShouldRaise("ListChanged");
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_Remove_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -59,7 +55,7 @@ namespace ChangeTracking.Tests
             bindingList.ShouldRaise("ListChanged");
         }
 
-        [TestMethod]
+        [Fact]
         public void CancelEdit_On_Item_Should_Remove_From_Collection()
         {
             var orders = Helper.GetOrdersIList();
@@ -76,7 +72,7 @@ namespace ChangeTracking.Tests
             bindingList.Count.Should().Be(withAddedCount - 1, because: "item was canceled");
         }
         
-        [TestMethod]
+        [Fact]
         public void Change_Property_On_Item_That_Implements_INotifyPropertyChanged_In_Collection_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -90,7 +86,7 @@ namespace ChangeTracking.Tests
             bindingList.ShouldRaise("ListChanged");
         }        
 
-        [TestMethod]
+        [Fact]
         public void AcceptChanges_On_Collection_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -111,7 +107,7 @@ namespace ChangeTracking.Tests
             trackable.ShouldRaise("ListChanged");
         }
 
-        [TestMethod]
+        [Fact]
         public void AcceptChanges_On_Collection_If_No_Changes_Should_Not_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -123,7 +119,7 @@ namespace ChangeTracking.Tests
             trackable.ShouldNotRaise("ListChanged");
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -140,7 +136,7 @@ namespace ChangeTracking.Tests
             trackable.ShouldRaise("ListChanged");
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_If_No_Changes_Should_Not_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -151,5 +147,6 @@ namespace ChangeTracking.Tests
 
             trackable.ShouldNotRaise("ListChanged");
         }
+#endif
     }
 }

@@ -1,17 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentAssertions;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class IRevertibleChangeTrackingTests
     {
-        [TestMethod]
+        [Fact]
         public void AsTrackable_Should_Make_Object_Implement_IRevertibleChangeTracking()
         {
             var order = Helper.GetOrder();

@@ -218,3 +218,5 @@ pip-log.txt
 !*/packages/repositories.config
 
 */.cr/*
+
+*.vs/*
