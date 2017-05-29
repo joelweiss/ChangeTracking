@@ -71,6 +71,7 @@
     <Compile Include="IChangeTrackableCollectionTests.cs" />
     <Compile Include="IBindingListTests.cs" />
     <Compile Include="INotifyPropertyChangedTests.cs" />
+    <Compile Include="InterfacePropertiesTests.cs" />
     <Compile Include="IRevertibleChangeTrackingTests.cs" />
     <Compile Include="IEditableObjectTests.cs" />
     <Compile Include="IChangeTrackableTests.cs" />
