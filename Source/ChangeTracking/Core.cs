@@ -81,21 +81,53 @@ namespace ChangeTracking
             var editableObjectInterceptor = new EditableObjectInterceptor<T>(notifyParentListItemCanceled);
             var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
             var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-            object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
-                new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
-                target,
-                _Options,
-                notifyPropertyChangedInterceptor,
-                changeTrackingInterceptor,
-                editableObjectInterceptor,
-                complexPropertyInterceptor,
-                collectionPropertyInterceptor);
-            notifyPropertyChangedInterceptor.IsInitialized = true;
-            changeTrackingInterceptor.IsInitialized = true;
-            editableObjectInterceptor.IsInitialized = true;
-            complexPropertyInterceptor.IsInitialized = true;
-            collectionPropertyInterceptor.IsInitialized = true;
-            return (T)proxy;
+
+            //if (typeof(T).IsInterface)
+            //{
+            //    object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(T),
+            //        new[]
+            //        {
+            //            typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager),
+            //            typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
+            //            typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged)
+            //        },
+            //        target,
+            //        _Options,
+            //        notifyPropertyChangedInterceptor,
+            //        changeTrackingInterceptor,
+            //        editableObjectInterceptor,
+            //        complexPropertyInterceptor,
+            //        collectionPropertyInterceptor);
+            //    notifyPropertyChangedInterceptor.IsInitialized = true;
+            //    changeTrackingInterceptor.IsInitialized = true;
+            //    editableObjectInterceptor.IsInitialized = true;
+            //    complexPropertyInterceptor.IsInitialized = true;
+            //    collectionPropertyInterceptor.IsInitialized = true;
+            //    return (T) proxy;
+            //}
+            //else
+            {
+                object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
+                    new[]
+                    {
+                        typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager),
+                        typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
+                        typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged)
+                    },
+                    target,
+                    _Options,
+                    notifyPropertyChangedInterceptor,
+                    changeTrackingInterceptor,
+                    editableObjectInterceptor,
+                    complexPropertyInterceptor,
+                    collectionPropertyInterceptor);
+                notifyPropertyChangedInterceptor.IsInitialized = true;
+                changeTrackingInterceptor.IsInitialized = true;
+                editableObjectInterceptor.IsInitialized = true;
+                complexPropertyInterceptor.IsInitialized = true;
+                collectionPropertyInterceptor.IsInitialized = true;
+                return (T) proxy;
+            }
         }
 
         public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target) where T : class
