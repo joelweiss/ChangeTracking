@@ -48,10 +48,10 @@ namespace ChangeTracking
             {
                 return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
                 {
-                    string propertyName = invocation.Method.PropertyName();
+                    string propertyName = invocation.GetPropertyName();
                     if (!trackables.ContainsKey(propertyName))
                     {
-                        object childTarget = propertyInfo.GetValue(invocation.InvocationTarget, null);
+                        object childTarget = propertyInfo.GetValue(invocation.InvocationTarget, invocation.GetParameter());
                         if (childTarget == null)
                         {
                             return;
@@ -73,7 +73,7 @@ namespace ChangeTracking
             {
                 return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
                 {
-                    string parentPropertyName = invocation.Method.PropertyName();
+                    string parentPropertyName = invocation.GetPropertyName();
                     invocation.Proceed();
 
                     object childTarget = invocation.Arguments[0];
@@ -102,17 +102,21 @@ namespace ChangeTracking
         private static bool CanComplexPropertyBeTrackable(PropertyInfo propertyInfo)
         {
             Type propertyType = propertyInfo.PropertyType;
+            bool ignored = propertyInfo.GetCustomAttributes(typeof(IgnoreAttribute), true).Any();
+            if (ignored)
+                return false;
+
             return 
                 // allow user to define properties that have an interface as property type
                 // to avoid conflicts with the CollectionPropertyInterceptor, 
                 // we exclude all properties whose type implements the "System.Collections.IEnumerable" interface
-                (propertyType.IsInterface && !typeof(IEnumerable).IsAssignableFrom(propertyType)) 
+                ((propertyType.IsInterface && !typeof(IEnumerable).IsAssignableFrom(propertyType)) 
                 || 
                 (propertyType.IsClass &&
                     !propertyType.IsSealed &&
                     propertyType.GetConstructor(Type.EmptyTypes) != null &&
                     propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Any(pi => pi.CanRead && pi.CanWrite) &&
-                    propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => pi.CanRead && pi.CanWrite && pi.GetAccessors()[0].IsVirtual));
+                    propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => pi.CanRead && pi.CanWrite && pi.GetAccessors()[0].IsVirtual)));
         }
 
         public void Intercept(IInvocation invocation)

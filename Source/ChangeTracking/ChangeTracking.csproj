@@ -45,6 +45,7 @@
     <Compile Include="ChangeTrackingBindingList.cs" />
     <Compile Include="ChangeStatus.cs" />
     <Compile Include="ChangeTrackingCollectionInterceptor.cs" />
+    <Compile Include="IgnoreAttribute.cs" />
     <Compile Include="ChangeTrackingInterceptor.cs" />
     <Compile Include="ChangeTrackingInterceptorSelector.cs" />
     <Compile Include="CollectionPropertyInterceptor.cs" />

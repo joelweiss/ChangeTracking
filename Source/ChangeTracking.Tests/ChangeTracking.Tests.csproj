@@ -80,6 +80,8 @@
     <Compile Include="Order.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="InterfaceListsTest.cs" />
+    <Compile Include="IDictionarySupportTest.cs" />
+    <Compile Include="IgnoreAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ChangeTracking\ChangeTracking.csproj">

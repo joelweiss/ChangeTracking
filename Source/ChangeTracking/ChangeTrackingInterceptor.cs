@@ -1,6 +1,7 @@
 ﻿using Castle.DynamicProxy;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -16,12 +17,23 @@ namespace ChangeTracking
         private ChangeStatus _ChangeTrackingStatus;
         private readonly Dictionary<string, Delegate> _StatusChangedEventHandlers;
         private bool _InRejectChanges;
+        private static readonly PropertyInfo _DynamicProperty;
+        private static readonly HashSet<string> _IgnoredProperties;
 
         public bool IsInitialized { get; set; }
 
         static ChangeTrackingInterceptor()
         {
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite).ToDictionary(pi => pi.Name);
+            _IgnoredProperties = new HashSet<string>(_Properties.Values.Where(p => p.GetCustomAttributes(typeof(IgnoreAttribute), true).Any())
+                .Select(p => p.Name)
+                .ToArray());
+            // in case an object implements something like
+            // public virtual string this[string key]{get;set;}
+            // this is the only type of property in C# that has a separate parameter for getter and setter methods
+            // and can be used to hold dynamic properties (which are not known at compile time)
+            // this is often used in conjunction with JSON
+            _DynamicProperty = _Properties.ExtractIndexerProperty();
         }
 
         internal ChangeTrackingInterceptor(ChangeStatus status)
@@ -37,18 +49,18 @@ namespace ChangeTracking
             {
                 return;
             }
-            if (invocation.Method.IsSetter() && !_InRejectChanges)
+            if (invocation.Method.IsSetter() && !_InRejectChanges && !_IgnoredProperties.Contains(invocation.GetPropertyName()))
             {
                 if (_ChangeTrackingStatus == ChangeStatus.Deleted)
                 {
                     throw new InvalidOperationException("Can not modify deleted object");
                 }
-                string propertyName = invocation.Method.PropertyName();
+                string propertyName = invocation.GetPropertyName();
                 bool noOriginalValueFound = !_OriginalValueDictionary.ContainsKey(propertyName);
 
-                object originalValue = noOriginalValueFound ? _Properties[propertyName].GetValue(invocation.Proxy, null) : _OriginalValueDictionary[propertyName];
+                object originalValue = noOriginalValueFound ? GetProperty(propertyName).GetValue(invocation.Proxy, invocation.GetParameter()) : _OriginalValueDictionary[propertyName];
                 invocation.Proceed();
-                object newValue = _Properties[propertyName].GetValue(invocation.Proxy, null);
+                object newValue = GetProperty(propertyName).GetValue(invocation.Proxy, invocation.GetParameter());
 
                 if (!ReferenceEquals(originalValue, newValue))
                 {
@@ -67,9 +79,9 @@ namespace ChangeTracking
                 }
                 return;
             }
-            else if (invocation.Method.IsGetter())
+            else if (invocation.Method.IsGetter() && !_IgnoredProperties.Contains(invocation.GetPropertyName()))
             {
-                string propertyName = invocation.Method.PropertyName();
+                string propertyName = invocation.GetPropertyName();
                 if (propertyName == "ChangeTrackingStatus")
                 {
                     invocation.ReturnValue = _ChangeTrackingStatus;
@@ -124,7 +136,7 @@ namespace ChangeTracking
             {
                 try
                 {
-                    value = _Properties[propertyName].GetValue(target, null);
+                    value = GetProperty(propertyName).GetValue(target, null);
                 }
                 catch (KeyNotFoundException ex)
                 {
@@ -183,8 +195,10 @@ namespace ChangeTracking
         private T GetOriginal(T proxy)
         {
             var original = Activator.CreateInstance<T>();
-            foreach (var property in _Properties.Values)
+
+            foreach (var propertyKey in _Properties)
             {
+                var property = propertyKey.Value;
                 object value;
                 object originalValue = _OriginalValueDictionary.TryGetValue(property.Name, out value) ? value : property.GetValue(proxy, null);
                 if (originalValue != null)
@@ -205,8 +219,13 @@ namespace ChangeTracking
                         originalValue = list;
                     }
                 }
-                property.SetValue(original, originalValue, null);
+                var index = property.Name == propertyKey.Key ? null : new object[]{propertyKey.Key};
+                property.SetValue(original, originalValue, index);
             }
+
+            // for the edge case that the objects implement IDictionary<,>
+            proxy.TryCopyDictionary(original);
+
             return original;
         }
 
@@ -256,7 +275,10 @@ namespace ChangeTracking
                 _InRejectChanges = true;
                 foreach (var changedProperty in _OriginalValueDictionary)
                 {
-                    _Properties[changedProperty.Key].SetValue(proxy, changedProperty.Value, null);
+                    var property = GetProperty(changedProperty.Key);
+
+                    var index = property.Name == changedProperty.Key ? null : new object[] { changedProperty.Key };
+                    property.SetValue(proxy, changedProperty.Value, index);
                 }
                 _OriginalValueDictionary.Clear();
                 _InRejectChanges = false;
@@ -270,8 +292,7 @@ namespace ChangeTracking
                 .Concat(((IComplexPropertyTrackable)proxy).ComplexPropertyTrackables)
                 .OfType<System.ComponentModel.IRevertibleChangeTracking>();
         }
-
-
+        
         private void UnsubscribeFromChildStatusChanged(string propertyName, object oldChild)
         {
             Delegate handler;
@@ -331,6 +352,20 @@ namespace ChangeTracking
         private ChangeStatus GetNewChangeStatus(object sender)
         {
             return _OriginalValueDictionary.Count == 0 && GetChildren(sender).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
+        }
+
+        internal static PropertyInfo GetProperty(string propertyName)
+        {
+            PropertyInfo property;
+            if (_Properties.TryGetValue(propertyName, out property))
+            {
+                return property;
+            }
+
+            if (_DynamicProperty != null)
+                return _DynamicProperty;
+
+            throw new InvalidOperationException($"The type '{typeof(T).FullName}' has no property named '{propertyName}'");
         }
     }
 }

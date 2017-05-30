@@ -1,5 +1,6 @@
 ﻿using Castle.DynamicProxy;
 using System;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -100,7 +101,7 @@ namespace ChangeTracking
         internal static T AsTrackable<T>(this T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
         {
             //if T was ICollection<T> it would of gone to one of the other overloads
-            if (target as ICollection != null)
+            if (target is ICollection)
             {
                 throw new InvalidOperationException("Only IList<T>, List<T> and ICollection<T> are supported");
             }

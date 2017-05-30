@@ -47,10 +47,10 @@ namespace ChangeTracking
             {
                 return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
                 {
-                    string propertyName = invocation.Method.PropertyName();
+                    string propertyName = invocation.GetPropertyName();
                     if (!trackables.ContainsKey(propertyName))
                     {
-                        object childTarget = propertyInfo.GetValue(invocation.InvocationTarget, null);
+                        object childTarget = propertyInfo.GetValue(invocation.InvocationTarget, invocation.GetParameter());
                         if (childTarget == null)
                         {
                             return;
@@ -72,7 +72,7 @@ namespace ChangeTracking
             {
                 return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
                 {
-                    string parentPropertyName = invocation.Method.PropertyName();
+                    string parentPropertyName = invocation.GetPropertyName();
                     invocation.Proceed();
 
                     object childTarget = invocation.Arguments[0];
@@ -100,6 +100,10 @@ namespace ChangeTracking
 
         private static bool CanCollectionBeTrackable(PropertyInfo propertyInfo)
         {
+            bool ignored = propertyInfo.GetCustomAttributes(typeof(IgnoreAttribute), true).Any();
+            if (ignored)
+                return false;
+
             Type propertyType = propertyInfo.PropertyType;
             Type genericCollectionArgumenType = propertyType.GetGenericArguments().FirstOrDefault();
             return genericCollectionArgumenType != null && propertyType.IsInterface && typeof(ICollection<>).MakeGenericType(genericCollectionArgumenType).IsAssignableFrom(propertyType);

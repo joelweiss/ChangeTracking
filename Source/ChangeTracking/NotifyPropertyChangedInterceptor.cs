@@ -13,12 +13,20 @@ namespace ChangeTracking
         private static Dictionary<string, PropertyInfo> _Properties;
         private readonly Dictionary<string, PropertyChangedEventHandler> _PropertyChangedEventHandlers;
         private readonly Dictionary<string, ListChangedEventHandler> _ListChangedEventHandlers;
+        private static readonly PropertyInfo _DynamicProperty;
 
         public bool IsInitialized { get; set; }
 
         static NotifyPropertyChangedInterceptor()
         {
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(pi => pi.Name);
+
+            // in case an object implements something like
+            // public virtual string this[string key]{get;set;}
+            // this is the only type of property in C# that has a separate parameter for getter and setter methods
+            // and can be used to hold dynamic properties (which are not known at compile time)
+            // this is often used in conjunction with JSON
+            _DynamicProperty = _Properties.ExtractIndexerProperty();
         }
 
         internal NotifyPropertyChangedInterceptor(ChangeTrackingInterceptor<T> changeTrackingInterceptor)
@@ -37,10 +45,10 @@ namespace ChangeTracking
             }
             if (invocation.Method.IsSetter())
             {
-                string propertyName = invocation.Method.PropertyName();
-                var previousValue = _Properties[propertyName].GetValue(invocation.Proxy, null);
+                string propertyName = invocation.GetPropertyName();
+                var previousValue = GetProperty(propertyName).GetValue(invocation.Proxy, invocation.GetParameter());
                 invocation.Proceed();
-                var newValue = _Properties[propertyName].GetValue(invocation.Proxy, null);
+                var newValue = GetProperty(propertyName).GetValue(invocation.Proxy, invocation.GetParameter());
                 if (!Equals(previousValue, newValue))
                 {
                     RaisePropertyChanged(invocation.Proxy, propertyName);
@@ -57,7 +65,7 @@ namespace ChangeTracking
             if (invocation.Method.IsGetter())
             {
                 invocation.Proceed();
-                string propertyName = invocation.Method.PropertyName();
+                string propertyName = invocation.GetPropertyName();
                 SubscribeToChildPropertyChanged(invocation, propertyName, invocation.ReturnValue);
                 SubscribeToChildListChanged(invocation, propertyName, invocation.ReturnValue);
             }
@@ -125,6 +133,19 @@ namespace ChangeTracking
         private void RaisePropertyChanged(object proxy, string propertyName)
         {
             PropertyChanged(proxy, new PropertyChangedEventArgs(propertyName));
+        }
+        internal static PropertyInfo GetProperty(string propertyName)
+        {
+            PropertyInfo property;
+            if (_Properties.TryGetValue(propertyName, out property))
+            {
+                return property;
+            }
+
+            if (_DynamicProperty != null)
+                return _DynamicProperty;
+
+            throw new InvalidOperationException($"The type '{typeof(T).FullName}' has no property named '{propertyName}'");
         }
     }
 }

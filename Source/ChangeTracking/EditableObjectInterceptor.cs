@@ -13,12 +13,20 @@ namespace ChangeTracking
         private readonly Dictionary<string, object> _BeforeEditValues;
         private readonly Action<T> _NotifyParentItemCanceled;
         private bool _IsEditing;
+        private static readonly PropertyInfo _DynamicProperty;
 
         public bool IsInitialized { get; set; }
 
         static EditableObjectInterceptor()
         {
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(pi => pi.Name);
+
+            // in case an object implements something like
+            // public virtual string this[string key]{get;set;}
+            // this is the only type of property in C# that has a separate parameter for getter and setter methods
+            // and can be used to hold dynamic properties (which are not known at compile time)
+            // this is often used in conjunction with JSON
+            _DynamicProperty = _Properties.ExtractIndexerProperty();
         }
 
         internal EditableObjectInterceptor()
@@ -43,12 +51,12 @@ namespace ChangeTracking
             {
                 if (invocation.Method.IsSetter())
                 {
-                    string propName = invocation.Method.PropertyName();
+                    string propName = invocation.GetPropertyName();
                     if (!_BeforeEditValues.ContainsKey(propName))
                     {
-                        var oldValue = _Properties[propName].GetValue(invocation.Proxy, null);
+                        var oldValue = GetProperty(propName).GetValue(invocation.Proxy, invocation.GetParameter());
                         invocation.Proceed();
-                        var newValue = _Properties[propName].GetValue(invocation.Proxy, null);
+                        var newValue = GetProperty(propName).GetValue(invocation.Proxy, invocation.GetParameter());
                         if (!Equals(oldValue, newValue))
                         {
                             _BeforeEditValues.Add(propName, oldValue);
@@ -58,7 +66,7 @@ namespace ChangeTracking
                     {
                         var originalValue = _BeforeEditValues[propName];
                         invocation.Proceed();
-                        var newValue = _Properties[propName].GetValue(invocation.Proxy, null);
+                        var newValue = GetProperty(propName).GetValue(invocation.Proxy, invocation.GetParameter());
                         if (Equals(originalValue, newValue))
                         {
                             _BeforeEditValues.Remove(propName);
@@ -109,7 +117,9 @@ namespace ChangeTracking
                 _IsEditing = false;
                 foreach (var oldValue in _BeforeEditValues)
                 {
-                    _Properties[oldValue.Key].SetValue(proxy, oldValue.Value, null);
+                    var property = GetProperty(oldValue.Key);
+                    var index = property.Name == oldValue.Key ? null : new object[] { oldValue.Key };
+                    property.SetValue(proxy, oldValue.Value, index);
                 }
                 if (_NotifyParentItemCanceled != null)
                 {
@@ -136,6 +146,19 @@ namespace ChangeTracking
             return ((ICollectionPropertyTrackable)proxy).CollectionPropertyTrackables
                 .Concat(((IComplexPropertyTrackable)proxy).ComplexPropertyTrackables)
                 .OfType<System.ComponentModel.IEditableObject>();
+        }
+        internal static PropertyInfo GetProperty(string propertyName)
+        {
+            PropertyInfo property;
+            if (_Properties.TryGetValue(propertyName, out property))
+            {
+                return property;
+            }
+
+            if (_DynamicProperty != null)
+                return _DynamicProperty;
+
+            throw new InvalidOperationException($"The type '{typeof(T).FullName}' has no property named '{propertyName}'");
         }
     }
 }
