@@ -67,8 +67,10 @@ namespace ChangeTracking
        
         public static void TryCopyDictionary(this object source, object target)
         {
-            if (source is IDictionary<string, object> sourceDict &&
-                target is IDictionary<string, object> targetDict)
+            var sourceDict = source as IDictionary<string, object>;
+            var targetDict = target as IDictionary<string, object>;
+            if ( sourceDict != null &&
+                 targetDict != null)
             {
                 foreach (var kvp in sourceDict)
                 {
