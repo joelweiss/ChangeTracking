@@ -43,6 +43,9 @@ namespace ChangeTracking.Tests
 
             var bChanges = bTrackable.CastToIChangeTrackable();
             Assert.IsTrue(bChanges.IsChanged);
+
+            Assert.IsTrue(bTrackable.Floors[0] is IFloor);
+            Assert.IsTrue(bTrackable.Floors[0] is Floor);
         }
     }
 }

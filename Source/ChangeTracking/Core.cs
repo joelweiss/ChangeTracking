@@ -115,20 +115,42 @@ namespace ChangeTracking
 
             if (typeof(T).IsInterface)
             {
-                 proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(T),
-                    new[]
-                    {
-                        typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager),
-                        typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
-                        typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged)
-                    },
-                    target,
-                    _Options,
-                    notifyPropertyChangedInterceptor,
-                    changeTrackingInterceptor,
-                    editableObjectInterceptor,
-                    complexPropertyInterceptor,
-                    collectionPropertyInterceptor);
+                var targetType = target.GetType();
+                if (!targetType.IsInterface)
+                {
+                    proxy = _ProxyGenerator.CreateClassProxyWithTarget(targetType,
+                        new[]
+                        {
+                            typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager),
+                            typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
+                            typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged),
+                            typeof(T)
+                        },
+                        target,
+                        _Options,
+                        notifyPropertyChangedInterceptor,
+                        changeTrackingInterceptor,
+                        editableObjectInterceptor,
+                        complexPropertyInterceptor,
+                        collectionPropertyInterceptor);
+                }
+                else
+                {
+                    proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(T),
+                        new[]
+                        {
+                            typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager),
+                            typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
+                            typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged)
+                        },
+                        target,
+                        _Options,
+                        notifyPropertyChangedInterceptor,
+                        changeTrackingInterceptor,
+                        editableObjectInterceptor,
+                        complexPropertyInterceptor,
+                        collectionPropertyInterceptor);
+                }
                 notifyPropertyChangedInterceptor.IsInitialized = true;
                 changeTrackingInterceptor.IsInitialized = true;
                 editableObjectInterceptor.IsInitialized = true;
