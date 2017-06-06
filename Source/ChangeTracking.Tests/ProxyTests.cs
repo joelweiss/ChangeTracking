@@ -117,5 +117,41 @@ namespace ChangeTracking.Tests
             var c = t.CastToIChangeTrackable();
             Assert.IsTrue(c.IsChanged);
         }
+
+
+
+        [TestMethod]
+        public void TracksChangesInDerivedInterface_CanCastToIChangeTrackable()
+        {
+            // Arrange
+            var b = new Building
+            {
+                Floors = new List<IFloor>
+                {
+                    new Floor {Name = "First floor"},
+                    new Basement
+                    {
+                        Name = "basement",
+                        Compartments = new List<ICompartment>
+                        {
+                            new Compartment{Name = "1A"},
+                            new Compartment{Name = "2B"},
+                            new Compartment{Name = "3C"},
+                        }
+                    }
+                }
+            };
+            var t = b.AsTrackable();
+            var basement = (Basement)t.Floors[1];
+            var compartment = (Compartment)basement.Compartments[0];
+
+            // Act
+            var tb = basement.CastToIChangeTrackable();
+            var tc = compartment.CastToIChangeTrackable();
+            basement.Compartments[0].Name = "noodle";
+
+            // Assert
+            Assert.IsTrue(tc.IsChanged);
+        }
     }
 }

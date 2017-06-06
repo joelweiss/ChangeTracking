@@ -49,6 +49,7 @@ namespace ChangeTracking
             var interfaceTypes = new[]
             {
                 typeof(IChangeTrackableInternal), typeof(IChangeTrackable<>).MakeGenericType(type),
+                typeof(IChangeTrackable<>).MakeGenericType(targetType),
                 typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable),
                 typeof(ICollectionPropertyTrackable), typeof(IEditableObject),
                 typeof(System.ComponentModel.INotifyPropertyChanged)
@@ -114,7 +115,8 @@ namespace ChangeTracking
 
             var interfaceTypes = new[]
             {
-                typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager),
+                typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>),
+                typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager),
                 typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
                 typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged),
                 typeof(T)
