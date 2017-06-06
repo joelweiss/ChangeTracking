@@ -14,10 +14,24 @@ namespace ChangeTracking.Tests
             public virtual IList<IFloor> Floors { get; set; } = new List<IFloor>();
         }
 
-        public interface IFloor { }
+        public interface IFloor
+        {
+            IList<IDoor> Doors { get; set; }
+        }
 
         public class Floor : IFloor
         {
+            public virtual IList<IDoor> Doors { get; set; } = new List<IDoor>();
+        }
+
+        public interface IDoor
+        {
+            bool IsLocked { get; set; }
+        }
+
+        public class Door : IDoor
+        {
+            public bool IsLocked { get; set; }
         }
 
         [TestMethod]
@@ -46,6 +60,35 @@ namespace ChangeTracking.Tests
 
             Assert.IsTrue(bTrackable.Floors[0] is IFloor);
             Assert.IsTrue(bTrackable.Floors[0] is Floor);
+        }
+
+        [TestMethod]
+        public void CanHandleInterfaceLists_Nested()
+        {
+            // Arrange
+            var b = new Building
+            {
+                Floors = new List<IFloor>
+                {
+                    new Floor
+                    {
+                        Doors = new List<IDoor>
+                        {
+                            new Door()
+                            {
+                                IsLocked = true,
+                            }
+                        }
+                    }
+                }
+            };
+
+            var t = b.AsTrackable();
+            
+            // Assert
+            Assert.IsTrue(t is IChangeTrackable);
+            Assert.IsTrue(t.Floors[0] is IChangeTrackable);
+            Assert.IsTrue(t.Floors[0].Doors[0] is IChangeTrackable);
         }
     }
 }
