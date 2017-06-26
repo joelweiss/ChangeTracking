@@ -10,7 +10,7 @@ namespace ChangeTracking
     internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IChangeTrackableCollection<T>, IInterceptorSettings where T : class
     {
         private ChangeTrackingBindingList<T> _WrappedTarget;
-        private IList<T> _DeletedItems;
+        internal IList<DeletedItem<T>> _DeletedItems;
         private static HashSet<string> _ImplementedMethods;
         private static HashSet<string> _BindingListImplementedMethods;
         private static HashSet<string> _IBindingListImplementedMethods;
@@ -34,10 +34,10 @@ namespace ChangeTracking
             {
                 target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
-            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
-            _DeletedItems = new List<T>();
+            _WrappedTarget = new ChangeTrackingBindingList<T>(target, InsertItem, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+            _DeletedItems = new List<DeletedItem<T>>();
         }
-        
+
         public void Intercept(IInvocation invocation)
         {
             if (_ImplementedMethods.Contains(invocation.Method.Name))
@@ -58,14 +58,26 @@ namespace ChangeTracking
             invocation.Proceed();
         }
 
-        private void DeleteItem(T item)
+        private void DeleteItem(T item, int index)
         {
             var currentStatus = item.CastToIChangeTrackable().ChangeTrackingStatus;
             var manager = (IChangeTrackingManager)item;
             bool deleteSuccess = manager.Delete();
             if (deleteSuccess && currentStatus != ChangeStatus.Added)
             {
-                _DeletedItems.Add(item);
+                _DeletedItems.Add(new DeletedItem<T>(item, index, currentStatus));
+            }
+        }
+
+        private void InsertItem(int index, T item)
+        {
+            var deletedItem = _DeletedItems.FirstOrDefault(d => d.Item == item);
+            if (deletedItem != null)
+            {
+                _DeletedItems.Remove(deletedItem);
+
+                var manager = (IChangeTrackingManager)item;
+                manager.UpdateStatus();
             }
         }
 
@@ -91,7 +103,7 @@ namespace ChangeTracking
 
         public IEnumerable<T> DeletedItems
         {
-            get { return _DeletedItems.Select(i => i); }
+            get { return _DeletedItems.Select(i => i.Item); }
         }
 
         public bool UnDelete(T item)
@@ -100,10 +112,11 @@ namespace ChangeTracking
             bool unDeleteSuccess = manager.UnDelete();
             if (unDeleteSuccess)
             {
-                bool removeSuccess = _DeletedItems.Remove(item);
+                var deletedItem = _DeletedItems.Single(d => d.Item == item);
+                bool removeSuccess = _DeletedItems.Remove(deletedItem);
                 if (removeSuccess)
                 {
-                    _WrappedTarget.Add(item);
+                    _WrappedTarget.Insert(deletedItem.Index, deletedItem.Item);
                     return true;
                 }
             }
@@ -131,10 +144,10 @@ namespace ChangeTracking
             {
                 item.RejectChanges();
             }
-            foreach (var item in _DeletedItems)
+            foreach (var item in _DeletedItems.OrderBy(i => i.Index))
             {
-                ((System.ComponentModel.IRevertibleChangeTracking)item).RejectChanges();
-                _WrappedTarget.Add(item);
+                ((System.ComponentModel.IRevertibleChangeTracking)item.Item).RejectChanges();
+                _WrappedTarget.Insert(item.Index, item.Item);
             }
             _DeletedItems.Clear();
         }
@@ -155,6 +168,19 @@ namespace ChangeTracking
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        internal class DeletedItem<T>
+        {
+            public DeletedItem(T item, int index, ChangeStatus previousStatus)
+            {
+                Item = item;
+                Index = index;
+                PreviousStatus = previousStatus;
+            }
+            public T Item { get; set; }
+            public int Index { get; set; }
+            public ChangeStatus PreviousStatus { get; set; }
         }
     }
 }

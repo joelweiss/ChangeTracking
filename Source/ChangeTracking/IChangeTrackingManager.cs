@@ -9,5 +9,6 @@ namespace ChangeTracking
     {
         bool Delete();
         bool UnDelete();
+        void UpdateStatus();
     }
 }

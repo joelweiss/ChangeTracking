@@ -117,6 +117,45 @@ namespace ChangeTracking.Tests
             trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(1)
                 .And.OnlyContain(o => o.Id == first.Id && o.CustomerNumber == first.CustomerNumber);
         }
+        
+        [TestMethod]
+        public void When_Deleting_From_Collection_And_Re_Adding_Manually_At_Same_Index_Should_Be_Set_To_Unchanged()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable.First();
+            trackable.Remove(first);
+
+            // Act
+            trackable.Insert(0, first);
+
+            // Assert
+            var fTrack = first.CastToIChangeTrackable();
+            fTrack.ChangeTrackingStatus.ShouldBeEquivalentTo(ChangeStatus.Unchanged);
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(0);
+        }
+
+        [TestMethod]
+        public void When_Deleting_From_Collection_And_Re_Adding_Manually_At_Different_Index_Should_Be_Set_To_Changed()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable.First();
+            first.CustomerNumber = "12345";
+            trackable.Remove(first);
+
+            // Act
+            trackable.Add(first);
+
+            // Assert
+            var fTrack = first.CastToIChangeTrackable();
+            fTrack.ChangeTrackingStatus.ShouldBeEquivalentTo(ChangeStatus.Changed);
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(0);
+        }
 
         [TestMethod]
         public void When_Deleting_From_Collection_Item_That_Status_Is_Added_Should_Not_Be_Added_To_DeletedItems()
@@ -261,6 +300,26 @@ namespace ChangeTracking.Tests
 
             trackable.Count.Should().Be(10);
             intf.UnchangedItems.Count().Should().Be(10);
+        }
+
+        [TestMethod]
+        public void RejectChanges_On_Collection_Should_Move_DeletedItems_Back_To_Unchanged_And_ReInsert_Them_At_Correct_Index()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = orders[4];
+            trackable.Remove(first);
+            var intf = trackable.CastToIChangeTrackableCollection();
+
+            // Act
+            intf.RejectChanges();
+
+            // Assert
+            trackable.Count.Should().Be(10);
+            intf.UnchangedItems.Count().Should().Be(10);
+            orders.IndexOf(first).ShouldBeEquivalentTo(4, "item was not re-inserted at original index");
         }
 
         [TestMethod]

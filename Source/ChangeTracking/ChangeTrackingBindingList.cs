@@ -10,13 +10,15 @@ namespace ChangeTracking
     internal sealed class ChangeTrackingBindingList<T> : BindingList<T> where T : class
     {
         private readonly Action<T> _ItemCanceled;
-        private Action<T> _DeleteItem;
+        private readonly Action<int, T> _insertItem;
+        private Action<T, int> _DeleteItem;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
 
-        public ChangeTrackingBindingList(IList<T> list, Action<T> deleteItem, Action<T> itemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
+        public ChangeTrackingBindingList(IList<T> list, Action<int, T> insertItem, Action<T, int> deleteItem, Action<T> itemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
             : base(list)
         {
+            _insertItem = insertItem;
             _DeleteItem = deleteItem;
             _ItemCanceled = itemCanceled;
             _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
@@ -35,9 +37,11 @@ namespace ChangeTracking
             object trackable = item as IChangeTrackable<T>;
             if (trackable == null)
             {
-                trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+                trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable,
+                    _MakeCollectionPropertiesTrackable);
             }
-            base.InsertItem(index, (T)trackable);
+            base.InsertItem(index, (T) trackable);
+            _insertItem?.Invoke(index, (T)trackable);
         }
 
         protected override void SetItem(int index, T item)
@@ -48,13 +52,15 @@ namespace ChangeTracking
                 trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
             base.SetItem(index, (T)trackable);
+            _insertItem?.Invoke(index, (T)trackable);
         }
 
         protected override void RemoveItem(int index)
         {
             if (_DeleteItem != null)
             {
-                _DeleteItem(this[index]);
+                var item = this[index];
+                _DeleteItem(item, index);
             }
             base.RemoveItem(index);
         }

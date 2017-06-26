@@ -117,6 +117,9 @@ namespace ChangeTracking
                 case "UnDelete":
                     invocation.ReturnValue = UnDelete(invocation.Proxy);
                     break;
+                case "UpdateStatus":
+                    UpdateStatus(invocation.Proxy);
+                    break;
                 case "AcceptChanges":
                     AcceptChanges(invocation.Proxy);
                     break;
@@ -248,6 +251,11 @@ namespace ChangeTracking
                 return true;
             }
             return false;
+        }
+
+        private void UpdateStatus(object proxy)
+        {
+            SetAndRaiseStatusChanged(proxy, true);
         }
 
         private void AcceptChanges(object proxy)
