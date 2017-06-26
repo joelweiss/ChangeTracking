@@ -30,13 +30,6 @@ namespace ChangeTracking
         TResult GetOriginalValue<TResult>(string propertyName);
 
         /// <summary>
-        /// Gets the original value of a given property.
-        /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
-        /// <returns></returns>
-        object GetOriginalValue(string propertyName);
-
-        /// <summary>
         /// Gets the original.
         /// </summary>
         /// <returns></returns>
@@ -48,6 +41,13 @@ namespace ChangeTracking
     {
         event EventHandler StatusChanged;
         ChangeStatus ChangeTrackingStatus { get; }
+
+        /// <summary>
+        /// Gets the original value of a given property.
+        /// </summary>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <returns></returns>
+        object GetOriginalValue(string propertyName);
     }
 
     public interface IChangeTrackableInternal

@@ -320,5 +320,30 @@ namespace ChangeTracking.Tests
 
             trackable.Should().BeAssignableTo<IChangeTrackableCollection<Order>>();
         }
+        
+        [TestMethod]
+        public void Can_AddProxy_ToProxyCollection()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+            var tOrders = orders.AsTrackable();
+
+            var order = Helper.GetOrder(2222, custumerNumber: "2222");
+            var tOrder = order.AsTrackable();
+
+            Exception exception = null;
+            try
+            {
+                // Act
+                tOrders.Add(tOrder);
+            }
+            catch (Exception x)
+            {
+                exception = x;
+            }
+
+            // Assert
+            Assert.IsNull(exception);
+        }
     }
 }

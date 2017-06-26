@@ -90,5 +90,26 @@ namespace ChangeTracking.Tests
             Assert.IsTrue(t.Floors[0] is IChangeTrackable);
             Assert.IsTrue(t.Floors[0].Doors[0] is IChangeTrackable);
         }
+
+        [TestMethod]
+        public void CanHandleInterfaceLists_WhenAddingProxy()
+        {
+            // Arrange
+            var b = new Building
+            {
+                Floors = new List<IFloor>
+                {
+                    
+                }
+            };
+            var bTrackable = b.AsTrackable();
+            var f = new Floor();
+            var fTrackable = f.AsTrackable();
+
+            // Act
+            bTrackable.Floors.Add(fTrackable);
+
+            // Assert
+        }
     }
 }

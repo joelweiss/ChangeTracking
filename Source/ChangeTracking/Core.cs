@@ -37,6 +37,7 @@ namespace ChangeTracking
 
         internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
         {
+            if (target == null) throw new ArgumentNullException(nameof(target));
 
             var targetType = target?.GetType() ?? type;
             var changeTrackingInterceptor = CreateInstance(typeof(ChangeTrackingInterceptor<>).MakeGenericType(targetType), ChangeStatus.Unchanged);
@@ -46,14 +47,22 @@ namespace ChangeTracking
             var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(targetType), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
             object proxy;
 
+
+            var interfaces = target.GetType().GetInterfaces();
+            var changeTrackables = interfaces.Select(itf => typeof(IChangeTrackable<>).MakeGenericType(itf)).ToList();
+            var cT = typeof(IChangeTrackable<>).MakeGenericType(type);
+            if (!changeTrackables.Contains(cT))
+                changeTrackables.Add(cT);
+            var cT2 = typeof(IChangeTrackable<>).MakeGenericType(targetType);
+            if (!changeTrackables.Contains(cT2))
+                changeTrackables.Add(cT2);
+
             var interfaceTypes = new[]
             {
-                typeof(IChangeTrackableInternal), typeof(IChangeTrackable<>).MakeGenericType(type),
-                typeof(IChangeTrackable<>).MakeGenericType(targetType),
-                typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable),
+                typeof(IChangeTrackableInternal), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable),
                 typeof(ICollectionPropertyTrackable), typeof(IEditableObject),
                 typeof(System.ComponentModel.INotifyPropertyChanged)
-            }.Union(target.GetType().GetInterfaces()).ToArray();
+            }.Union(interfaces).Concat(changeTrackables).ToArray();
 
             if (type.IsInterface && targetType.IsInterface)
             {
@@ -113,14 +122,22 @@ namespace ChangeTracking
             var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
             object proxy;
 
+            var interfaces = target.GetType().GetInterfaces();
+            var changeTrackables = interfaces.Select(itf => typeof(IChangeTrackable<>).MakeGenericType(itf)).ToList();
+            var cT = typeof(IChangeTrackable<T>);
+            if(!changeTrackables.Contains(cT))
+                changeTrackables.Add(cT);
+            var cT2 = typeof(IChangeTrackable<>).MakeGenericType(type);
+            if (!changeTrackables.Contains(cT2))
+                changeTrackables.Add(cT2);
+
             var interfaceTypes = new[]
             {
-                typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>),
-                typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager),
+                typeof(IChangeTrackableInternal), typeof(IChangeTrackingManager),
                 typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
                 typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged),
                 typeof(T)
-            }.Union(target.GetType().GetInterfaces()).ToArray();
+            }.Union(interfaces).Concat(changeTrackables).ToArray();
 
             if (typeof(T).IsInterface && type.IsInterface)
             {
