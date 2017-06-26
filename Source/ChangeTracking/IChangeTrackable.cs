@@ -22,14 +22,6 @@ namespace ChangeTracking
         TResult GetOriginalValue<TResult>(Expression<Func<T, TResult>> selector);
 
         /// <summary>
-        /// Gets the original value of a given property.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="propertyName">Name of the property.</param>
-        /// <returns></returns>
-        TResult GetOriginalValue<TResult>(string propertyName);
-
-        /// <summary>
         /// Gets the original.
         /// </summary>
         /// <returns></returns>
@@ -48,6 +40,14 @@ namespace ChangeTracking
         /// <param name="propertyName">Name of the property.</param>
         /// <returns></returns>
         object GetOriginalValue(string propertyName);
+
+        /// <summary>
+        /// Gets the original value of a given property.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <returns></returns>
+        TResult GetOriginalValue<TResult>(string propertyName);
     }
 
     public interface IChangeTrackableInternal

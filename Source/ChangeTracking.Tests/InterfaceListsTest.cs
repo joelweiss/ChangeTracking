@@ -31,7 +31,7 @@ namespace ChangeTracking.Tests
 
         public class Door : IDoor
         {
-            public bool IsLocked { get; set; }
+            public virtual bool IsLocked { get; set; }
         }
 
         [TestMethod]
