@@ -10,12 +10,14 @@ namespace ChangeTracking
     internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IChangeTrackableCollection<T>, IInterceptorSettings where T : class
     {
         private ChangeTrackingBindingList<T> _WrappedTarget;
-        internal IList<DeletedItem<T>> _DeletedItems;
+        internal IList<IndexedItem<T>> _DeletedItems;
+        internal IList<IndexedItem<T>> _AddedItems;
         private static HashSet<string> _ImplementedMethods;
         private static HashSet<string> _BindingListImplementedMethods;
         private static HashSet<string> _IBindingListImplementedMethods;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
+        private bool _reverting;
 
         public bool IsInitialized { get; set; }
 
@@ -34,8 +36,9 @@ namespace ChangeTracking
             {
                 target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
-            _WrappedTarget = new ChangeTrackingBindingList<T>(target, InsertItem, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
-            _DeletedItems = new List<DeletedItem<T>>();
+            _WrappedTarget = new ChangeTrackingBindingList<T>(target, InsertingItem, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+            _DeletedItems = new List<IndexedItem<T>>();
+            _AddedItems = new List<IndexedItem<T>>();
         }
 
         public void Intercept(IInvocation invocation)
@@ -60,24 +63,53 @@ namespace ChangeTracking
 
         private void DeleteItem(T item, int index)
         {
+            if (_reverting)
+                return;
+
             var currentStatus = item.CastToIChangeTrackable().ChangeTrackingStatus;
             var manager = (IChangeTrackingManager)item;
             bool deleteSuccess = manager.Delete();
             if (deleteSuccess && currentStatus != ChangeStatus.Added)
             {
-                _DeletedItems.Add(new DeletedItem<T>(item, index, currentStatus));
+                _DeletedItems.Add(new IndexedItem<T>(item, index, currentStatus));
             }
         }
 
-        private void InsertItem(int index, T item)
+        private T InsertingItem(int index, T item)
         {
+            if (_reverting)
+                return item;
+
             var deletedItem = _DeletedItems.FirstOrDefault(d => d.Item == item);
             if (deletedItem != null)
             {
                 _DeletedItems.Remove(deletedItem);
 
-                var manager = (IChangeTrackingManager)item;
+                _AddedItems.Add(new IndexedItem<T>(item, index, ChangeStatus.Deleted));
+
+                var manager = (IChangeTrackingManager) item;
                 manager.UpdateStatus();
+                return item;
+            }
+            else if (item is IChangeTrackable<T> ctr && ctr.ChangeTrackingStatus == ChangeStatus.Deleted)
+            {
+                _AddedItems.Add(new IndexedItem<T>(item, index, ChangeStatus.Deleted));
+
+                var manager = (IChangeTrackingManager) item;
+                manager.SetAdded();
+                return item;
+            }
+            else
+            {
+                object trackable = item as IChangeTrackable<T>;
+                if (trackable == null)
+                {
+                    trackable = item.AsTrackable(ChangeStatus.Added, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+                }
+
+                _AddedItems.Add(new IndexedItem<T>((T)trackable, index, ChangeStatus.Unchanged));
+
+                return (T)trackable;
             }
         }
 
@@ -93,7 +125,7 @@ namespace ChangeTracking
 
         public IEnumerable<T> AddedItems
         {
-            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Added).Cast<T>(); }
+            get { return _AddedItems.Select(i => i.Item); }
         }
 
         public IEnumerable<T> ChangedItems
@@ -139,17 +171,25 @@ namespace ChangeTracking
 
         public void RejectChanges()
         {
-            AddedItems.ToList().ForEach(i => _WrappedTarget.Remove(i));
-            foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
+            try
             {
-                item.RejectChanges();
+                _reverting = true;
+                AddedItems.ToList().ForEach(i => _WrappedTarget.Remove(i));
+                foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
+                {
+                    item.RejectChanges();
+                }
+                foreach (var item in _DeletedItems.OrderBy(i => i.Index))
+                {
+                    ((System.ComponentModel.IRevertibleChangeTracking) item.Item).RejectChanges();
+                    _WrappedTarget.Insert(item.Index, item.Item);
+                }
+                _DeletedItems.Clear();
             }
-            foreach (var item in _DeletedItems.OrderBy(i => i.Index))
+            finally
             {
-                ((System.ComponentModel.IRevertibleChangeTracking)item.Item).RejectChanges();
-                _WrappedTarget.Insert(item.Index, item.Item);
+                _reverting = false;
             }
-            _DeletedItems.Clear();
         }
 
         public bool IsChanged
@@ -170,9 +210,9 @@ namespace ChangeTracking
             return GetEnumerator();
         }
 
-        internal class DeletedItem<T>
+        internal class IndexedItem<T>
         {
-            public DeletedItem(T item, int index, ChangeStatus previousStatus)
+            public IndexedItem(T item, int index, ChangeStatus previousStatus)
             {
                 Item = item;
                 Index = index;

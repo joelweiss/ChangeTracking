@@ -155,8 +155,77 @@ namespace ChangeTracking.Tests
             var fTrack = first.CastToIChangeTrackable();
             fTrack.ChangeTrackingStatus.ShouldBeEquivalentTo(ChangeStatus.Changed);
             trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(0);
-        }
 
+        }
+        
+        [TestMethod]
+        public void When_Deleting_From_Collection_And_Re_Adding_Manually_Into_Different_Collection_Should_Be_Set_To_Added()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable[0];
+            var second = trackable[1];
+
+            var orderDetails = first.OrderDetails[0];
+
+            first.OrderDetails.Remove(orderDetails);
+
+            // Act
+            second.OrderDetails.Add(orderDetails);
+
+            // Assert
+            var fTrack = orderDetails.CastToIChangeTrackable();
+            fTrack.ChangeTrackingStatus.ShouldBeEquivalentTo(ChangeStatus.Added);
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(0);
+
+
+
+            var change = trackable.CastToIChangeTrackableCollection();
+            change.AcceptChanges();
+
+
+            trackable[0].OrderDetails.Count.ShouldBeEquivalentTo(1);
+            trackable[1].OrderDetails.Count.ShouldBeEquivalentTo(3);
+        }
+        
+        [TestMethod]
+        public void When_Deleting_From_Collection_And_Re_Adding_Manually_Into_Different_Collection_And_Later_Reverted_Should_Be_Removed()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable[0];
+            var second = trackable[1];
+
+            var orderDetails = first.OrderDetails[0];
+
+            first.OrderDetails.Remove(orderDetails);
+
+            // Act
+            second.OrderDetails.Add(orderDetails);
+
+            // Assert
+            var fTrack = orderDetails.CastToIChangeTrackable();
+            fTrack.ChangeTrackingStatus.ShouldBeEquivalentTo(ChangeStatus.Added);
+            trackable.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(0);
+
+
+            var odTrack = second.OrderDetails.CastToIChangeTrackableCollection();
+            odTrack.AddedItems.Count().ShouldBeEquivalentTo(1);
+            //odTrack.RejectChanges();
+
+
+            var change = trackable.CastToIChangeTrackableCollection();
+            change.RejectChanges();
+
+
+            trackable[0].OrderDetails.Count.ShouldBeEquivalentTo(2);
+            trackable[1].OrderDetails.Count.ShouldBeEquivalentTo(2);
+        }
+        
         [TestMethod]
         public void When_Deleting_From_Collection_Item_That_Status_Is_Added_Should_Not_Be_Added_To_DeletedItems()
         {

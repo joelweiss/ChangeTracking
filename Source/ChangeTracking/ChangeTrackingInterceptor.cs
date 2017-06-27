@@ -120,6 +120,9 @@ namespace ChangeTracking
                 case "UpdateStatus":
                     UpdateStatus(invocation.Proxy);
                     break;
+                case "SetAdded":
+                    SetAdded(invocation.Proxy);
+                    break;
                 case "AcceptChanges":
                     AcceptChanges(invocation.Proxy);
                     break;
@@ -256,6 +259,19 @@ namespace ChangeTracking
         private void UpdateStatus(object proxy)
         {
             SetAndRaiseStatusChanged(proxy, true);
+        }
+
+        private void SetAdded(object proxy)
+        {
+            if (_ChangeTrackingStatus == ChangeStatus.Deleted)
+            {
+                var newChangeStatus = ChangeStatus.Added;
+                if (_ChangeTrackingStatus != newChangeStatus)
+                {
+                    _ChangeTrackingStatus = newChangeStatus;
+                    _StatusChanged(proxy, EventArgs.Empty);
+                }
+            }
         }
 
         private void AcceptChanges(object proxy)
