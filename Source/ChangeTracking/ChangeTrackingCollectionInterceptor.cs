@@ -167,6 +167,7 @@ namespace ChangeTracking
                 }
             }
             _DeletedItems.Clear();
+            _AddedItems.Clear();
         }
 
         public void RejectChanges()
@@ -175,6 +176,7 @@ namespace ChangeTracking
             {
                 _reverting = true;
                 AddedItems.ToList().ForEach(i => _WrappedTarget.Remove(i));
+                _AddedItems.Clear();
                 foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
                 {
                     item.RejectChanges();

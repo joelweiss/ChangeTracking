@@ -188,6 +188,8 @@ namespace ChangeTracking.Tests
 
             trackable[0].OrderDetails.Count.ShouldBeEquivalentTo(1);
             trackable[1].OrderDetails.Count.ShouldBeEquivalentTo(3);
+
+            change.IsChanged.ShouldBeEquivalentTo(false);
         }
         
         [TestMethod]
@@ -215,8 +217,6 @@ namespace ChangeTracking.Tests
 
             var odTrack = second.OrderDetails.CastToIChangeTrackableCollection();
             odTrack.AddedItems.Count().ShouldBeEquivalentTo(1);
-            //odTrack.RejectChanges();
-
 
             var change = trackable.CastToIChangeTrackableCollection();
             change.RejectChanges();
@@ -224,6 +224,9 @@ namespace ChangeTracking.Tests
 
             trackable[0].OrderDetails.Count.ShouldBeEquivalentTo(2);
             trackable[1].OrderDetails.Count.ShouldBeEquivalentTo(2);
+
+
+            change.IsChanged.ShouldBeEquivalentTo(false);
         }
         
         [TestMethod]
