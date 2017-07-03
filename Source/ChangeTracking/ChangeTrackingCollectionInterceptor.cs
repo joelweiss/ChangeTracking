@@ -18,6 +18,7 @@ namespace ChangeTracking
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
         private bool _reverting;
+        private bool _undeleting;
 
         public bool IsInitialized { get; set; }
 
@@ -85,16 +86,14 @@ namespace ChangeTracking
 
         private T InsertingItem(int index, T item)
         {
-            if (_reverting)
+            if (_reverting || _undeleting)
                 return item;
 
             var deletedItem = _DeletedItems.FirstOrDefault(d => d.Item == item);
             if (deletedItem != null)
             {
                 _DeletedItems.Remove(deletedItem);
-
-                //_AddedItems.Add(new IndexedItem<T>(item, index, ChangeStatus.Deleted));
-
+                
                 var manager = (IChangeTrackingManager) item;
                 manager.UpdateStatus();
                 return item;
@@ -116,6 +115,8 @@ namespace ChangeTracking
                 }
 
                 _AddedItems.Add(new IndexedItem<T>((T)trackable, index, ChangeStatus.Unchanged));
+                var manager = (IChangeTrackingManager)trackable;
+                manager.SetAdded();
 
                 return (T)trackable;
             }
@@ -148,19 +149,27 @@ namespace ChangeTracking
 
         public bool UnDelete(T item)
         {
-            var manager = (IChangeTrackingManager)item;
-            bool unDeleteSuccess = manager.UnDelete();
-            if (unDeleteSuccess)
+            try
             {
-                var deletedItem = _DeletedItems.Single(d => d.Item == item);
-                bool removeSuccess = _DeletedItems.Remove(deletedItem);
-                if (removeSuccess)
+                _undeleting = true;
+                var manager = (IChangeTrackingManager) item;
+                bool unDeleteSuccess = manager.UnDelete();
+                if (unDeleteSuccess)
                 {
-                    _WrappedTarget.Insert(deletedItem.Index, deletedItem.Item);
-                    return true;
+                    var deletedItem = _DeletedItems.Single(d => d.Item == item);
+                    bool removeSuccess = _DeletedItems.Remove(deletedItem);
+                    if (removeSuccess)
+                    {
+                        _WrappedTarget.Insert(deletedItem.Index, deletedItem.Item);
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
+            finally
+            {
+                _undeleting = false;
+            }
         }
 
         public void AcceptChanges()

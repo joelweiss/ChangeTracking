@@ -83,6 +83,19 @@ namespace ChangeTracking.Tests
         }
 
         [TestMethod]
+        public void When_Adding_Trackable_To_Collection_Status_Should_Be_Added()
+        {
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var tOrder = new Order {Id = 999999999, CustomerNumber = "Customer"}.AsTrackable();
+            trackable.Add(tOrder);
+
+            trackable.Single(o => o.Id == 999999999).CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
+            tOrder.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
+        }
+        
+        [TestMethod]
         public void When_Adding_To_Collection_Via_Indexer_Status_Should_Be_Added()
         {
             IList<Order> list = Helper.GetOrdersIList();

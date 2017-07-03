@@ -263,7 +263,7 @@ namespace ChangeTracking
 
         private void SetAdded(object proxy)
         {
-            if (_ChangeTrackingStatus == ChangeStatus.Deleted)
+            //if (_ChangeTrackingStatus == ChangeStatus.Deleted)
             {
                 var newChangeStatus = ChangeStatus.Added;
                 if (_ChangeTrackingStatus != newChangeStatus)
