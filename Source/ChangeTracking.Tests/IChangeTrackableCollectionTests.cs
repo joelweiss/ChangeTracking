@@ -228,6 +228,60 @@ namespace ChangeTracking.Tests
 
             change.IsChanged.ShouldBeEquivalentTo(false);
         }
+
+        [TestMethod]
+        public void When_Adding_To_Collection_And_Then_Deleting_Collection_Has_No_Changes()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable[0];
+
+            var trackableDetails = first.OrderDetails;
+            var orderDetails = first.OrderDetails[0];
+            first.OrderDetails.Remove(orderDetails);
+
+            // Act
+            first.OrderDetails.Insert(0, orderDetails);
+
+            // Assert
+            var fTrack = orderDetails.CastToIChangeTrackable();
+            fTrack.ChangeTrackingStatus.ShouldBeEquivalentTo(ChangeStatus.Unchanged);
+
+
+            trackableDetails.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(0);
+            trackableDetails.CastToIChangeTrackableCollection().AddedItems.Should().HaveCount(0);
+            var change = trackable.CastToIChangeTrackableCollection();
+            change.IsChanged.ShouldBeEquivalentTo(false);
+        }
+
+        [TestMethod]
+        public void When_Removing_From_Collection_And_Then_Adding_Collection_Has_No_Changes()
+        {
+            // Arrange
+            var orders = Helper.GetOrdersIList();
+
+            var trackable = orders.AsTrackable();
+            var first = trackable[0];
+
+            var trackableDetails = first.OrderDetails;
+            var orderDetails = first.OrderDetails[0];
+            first.OrderDetails.Insert(1, new OrderDetail { ItemNo = "3333", OrderDetailId = 3333 });
+
+            // Act
+            first.OrderDetails.RemoveAt(1);
+
+            // Assert
+            var fTrack = orderDetails.CastToIChangeTrackable();
+            fTrack.ChangeTrackingStatus.ShouldBeEquivalentTo(ChangeStatus.Unchanged);
+
+
+            trackableDetails.CastToIChangeTrackableCollection().DeletedItems.Should().HaveCount(0);
+            trackableDetails.CastToIChangeTrackableCollection().AddedItems.Should().HaveCount(0);
+            var change = trackable.CastToIChangeTrackableCollection();
+            change.IsChanged.ShouldBeEquivalentTo(false);
+        }
         
         [TestMethod]
         public void When_Deleting_From_Collection_Item_That_Status_Is_Added_Should_Not_Be_Added_To_DeletedItems()

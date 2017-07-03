@@ -67,11 +67,19 @@ namespace ChangeTracking
                 return;
 
             var currentStatus = item.CastToIChangeTrackable().ChangeTrackingStatus;
-            var manager = (IChangeTrackingManager)item;
+            var manager = (IChangeTrackingManager) item;
             bool deleteSuccess = manager.Delete();
             if (deleteSuccess && currentStatus != ChangeStatus.Added)
             {
                 _DeletedItems.Add(new IndexedItem<T>(item, index, currentStatus));
+            }
+            else if (deleteSuccess && currentStatus == ChangeStatus.Added)
+            {
+                var added = _AddedItems.FirstOrDefault(a => a.Item == item);
+                if (added != null)
+                {
+                    _AddedItems.Remove(added);
+                }
             }
         }
 
@@ -85,7 +93,7 @@ namespace ChangeTracking
             {
                 _DeletedItems.Remove(deletedItem);
 
-                _AddedItems.Add(new IndexedItem<T>(item, index, ChangeStatus.Deleted));
+                //_AddedItems.Add(new IndexedItem<T>(item, index, ChangeStatus.Deleted));
 
                 var manager = (IChangeTrackingManager) item;
                 manager.UpdateStatus();
