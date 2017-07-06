@@ -27,6 +27,13 @@ namespace ChangeTracking
         /// <returns></returns>
         /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>
         T GetOriginal();
+
+        /// <summary>
+        /// Gets the current object unproxied.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>
+        T GetCurrent();
     }
 
     public interface IChangeTrackable
@@ -53,5 +60,6 @@ namespace ChangeTracking
     public interface IChangeTrackableInternal
     {
         object GetOriginal();
+        object GetCurrent();
     }
 }

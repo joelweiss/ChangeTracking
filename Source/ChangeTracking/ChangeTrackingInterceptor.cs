@@ -105,6 +105,9 @@ namespace ChangeTracking
                 case "GetOriginal":
                     invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
                     break;
+                case "GetCurrent":
+                    invocation.ReturnValue = GetCurrent((T)invocation.Proxy);
+                    break;
                 case "add_StatusChanged":
                     _StatusChanged += (EventHandler)invocation.Arguments[0];
                     break;
@@ -227,6 +230,42 @@ namespace ChangeTracking
                 }
                 var index = property.Name == propertyKey.Key ? null : new object[]{propertyKey.Key};
                 property.SetValue(original, originalValue, index);
+            }
+
+            // for the edge case that the objects implement IDictionary<,>
+            proxy.TryCopyDictionary(original);
+
+            return original;
+        }
+        
+        private T GetCurrent(T proxy)
+        {
+            var original = Activator.CreateInstance<T>();
+
+            foreach (var propertyKey in _Properties)
+            {
+                var property = propertyKey.Value;
+                object currentValue = property.GetValue(proxy, null);
+                if (currentValue != null)
+                {
+                    var trackable = currentValue as IChangeTrackableInternal;
+                    if (trackable != null)
+                    {
+                        currentValue = trackable.GetCurrent();
+                    }
+                    else if (currentValue.GetType().GetInterface("IChangeTrackableCollection`1") != null)
+                    {
+                        IEnumerable<object> originalValues = ((System.Collections.IEnumerable)currentValue).Cast<IChangeTrackableInternal>().Select(v => v.GetCurrent());
+                        var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments().First()));
+                        foreach (var item in originalValues)
+                        {
+                            list.Add(item);
+                        }
+                        currentValue = list;
+                    }
+                }
+                var index = property.Name == propertyKey.Key ? null : new object[] { propertyKey.Key };
+                property.SetValue(original, currentValue, index);
             }
 
             // for the edge case that the objects implement IDictionary<,>
