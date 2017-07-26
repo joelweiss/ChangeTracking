@@ -215,7 +215,7 @@ namespace ChangeTracking
         {
             get
             {
-                return ChangedItems.Any() || AddedItems.Any() || DeletedItems.Any();
+                return ChangedItems.Any() || _AddedItems.Count != 0 || _DeletedItems.Count != 0;
             }
         }
 

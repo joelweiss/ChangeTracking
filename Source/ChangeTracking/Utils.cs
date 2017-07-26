@@ -26,9 +26,11 @@ namespace ChangeTracking
             return method.IsSpecialName && (method.Name.StartsWith("get_", StringComparison.Ordinal) || method.Name.StartsWith("set_", StringComparison.Ordinal));
         }
 
+        private static readonly int prefixLength = "set_".Length;
         public static string PropertyName(this MethodInfo method)
         {
-            return method.Name.StartsWith("set_") ? method.Name.Substring("set_".Length) : method.Name.Substring("get_".Length);
+            return method.Name.Substring(prefixLength);
+            //return method.Name.StartsWith("set_") ? method.Name.Substring("set_".Length) : method.Name.Substring("get_".Length);
         }
 
         public static object[] GetParameter(this IInvocation invocation)
@@ -39,7 +41,10 @@ namespace ChangeTracking
         public static string GetPropertyName(this IInvocation invocation)
         {
             //return invocation.Method.PropertyName();
-            return invocation.Arguments.Length == 2 ? (string)invocation.Arguments[0] : invocation.Method.PropertyName();
+            if (invocation.Arguments.Length == 2)
+                return (string) invocation.Arguments[0];
+                    
+            return invocation.Method.PropertyName();
         }
 
         /// <summary>

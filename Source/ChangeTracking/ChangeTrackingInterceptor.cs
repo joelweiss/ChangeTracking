@@ -49,13 +49,13 @@ namespace ChangeTracking
             {
                 return;
             }
-            if (invocation.Method.IsSetter() && !_InRejectChanges && !_IgnoredProperties.Contains(invocation.GetPropertyName()))
+            var propertyName = invocation.GetPropertyName();
+            if (invocation.Method.IsSetter() && !_InRejectChanges && !_IgnoredProperties.Contains(propertyName))
             {
                 if (_ChangeTrackingStatus == ChangeStatus.Deleted)
                 {
                     throw new InvalidOperationException("Can not modify deleted object");
                 }
-                string propertyName = invocation.GetPropertyName();
                 bool noOriginalValueFound = !_OriginalValueDictionary.ContainsKey(propertyName);
 
                 object originalValue = noOriginalValueFound ? GetProperty(propertyName).GetValue(invocation.Proxy, invocation.GetParameter()) : _OriginalValueDictionary[propertyName];
@@ -79,9 +79,8 @@ namespace ChangeTracking
                 }
                 return;
             }
-            else if (invocation.Method.IsGetter() && !_IgnoredProperties.Contains(invocation.GetPropertyName()))
+            else if (invocation.Method.IsGetter() && !_IgnoredProperties.Contains(propertyName))
             {
-                string propertyName = invocation.GetPropertyName();
                 if (propertyName == "ChangeTrackingStatus")
                 {
                     invocation.ReturnValue = _ChangeTrackingStatus;

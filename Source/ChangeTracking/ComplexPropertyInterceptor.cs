@@ -17,6 +17,9 @@ namespace ChangeTracking
         private readonly bool _MakeCollectionPropertiesTrackable;
         private bool _AreAllPropertesTrackable;
 
+        private const string GET = "get_";
+        private const string SET = "set_";
+
         public bool IsInitialized { get; set; }
 
         static ComplexPropertyInterceptor()
@@ -26,12 +29,12 @@ namespace ChangeTracking
             var getters = _Properties.Where(pi => pi.CanRead).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, bool, bool>>(pi.Name, GetGetterAction(pi)));
             foreach (var getter in getters)
             {
-                _Actions.Add("get_" + getter.Key, getter.Value);
+                _Actions.Add(GET + getter.Key, getter.Value);
             }
             var setters = _Properties.Where(pi => pi.CanWrite).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, bool, bool>>(pi.Name, GetSetterAction(pi)));
             foreach (var setter in setters)
             {
-                _Actions.Add("set_" + setter.Key, setter.Value);
+                _Actions.Add(SET + setter.Key, setter.Value);
             }
         }
 
