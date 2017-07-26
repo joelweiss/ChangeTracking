@@ -38,7 +38,7 @@ namespace ChangeTracking
 
     public interface IChangeTrackable
     {
-        event EventHandler StatusChanged;
+        event EventHandler<StatusChangedEventArgs> StatusChanged;
         ChangeStatus ChangeTrackingStatus { get; }
 
         /// <summary>

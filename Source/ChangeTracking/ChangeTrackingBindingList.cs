@@ -10,17 +10,27 @@ namespace ChangeTracking
     internal sealed class ChangeTrackingBindingList<T> : BindingList<T> where T : class
     {
         private readonly Action<T> _ItemCanceled;
+        private readonly Action<StatusChangedEventArgs> _childStatusChanged;
         private readonly Func<int, T, T> _insertingItem;
-        private Action<T, int> _DeleteItem;
+        private readonly Action<T, int> _DeleteItem;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
 
-        public ChangeTrackingBindingList(IList<T> list, Func<int, T, T> inseringItem, Action<T, int> deleteItem, Action<T> itemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
+        public ChangeTrackingBindingList(IList<T> list, Func<int, T, T> inseringItem, Action<T, int> deleteItem, Action<T> itemCanceled, Action<StatusChangedEventArgs> childStatusChanged, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
             : base(list)
         {
+            if (inseringItem == null) throw new ArgumentNullException(nameof(inseringItem));
+            if (deleteItem == null) throw new ArgumentNullException(nameof(deleteItem));
+            if (itemCanceled == null) throw new ArgumentNullException(nameof(itemCanceled));
+            if (childStatusChanged == null) throw new ArgumentNullException(nameof(childStatusChanged));
+            if (deleteItem == null) throw new ArgumentNullException(nameof(deleteItem));
+
+
+
             _insertingItem = inseringItem;
             _DeleteItem = deleteItem;
             _ItemCanceled = itemCanceled;
+            _childStatusChanged = childStatusChanged;
             _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
             _MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
             var bindingListType = typeof(ChangeTrackingBindingList<T>).BaseType;
@@ -29,6 +39,12 @@ namespace ChangeTracking
             foreach (var item in list)
             {
                 hookMethod.Invoke(this, new object[] { item });
+
+                if (item is IChangeTrackable<T> trackable)
+                {
+                    trackable.StatusChanged -= Trackable_StatusChanged;
+                    trackable.StatusChanged += Trackable_StatusChanged;
+                }
             }
         }
 
@@ -36,33 +52,49 @@ namespace ChangeTracking
         {
             var i = _insertingItem?.Invoke(index, item) ?? item;
 
-            object trackable = i as IChangeTrackable<T>;
+            IChangeTrackable<T> trackable = i as IChangeTrackable<T>;
             if (trackable == null)
             {
-                trackable = i.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable,
+                trackable = (IChangeTrackable<T>)i.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable,
                     _MakeCollectionPropertiesTrackable);
             }
+
+            trackable.StatusChanged -= Trackable_StatusChanged;
+            trackable.StatusChanged += Trackable_StatusChanged;
+            
             base.InsertItem(index, (T) trackable);
         }
 
         protected override void SetItem(int index, T item)
         {
-            object trackable = item as IChangeTrackable<T>;
+            IChangeTrackable<T> trackable = item as IChangeTrackable<T>;
             if (trackable == null)
             {
-                trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+                trackable = (IChangeTrackable<T>)item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
+
+            trackable.StatusChanged -= Trackable_StatusChanged;
+            trackable.StatusChanged += Trackable_StatusChanged;
+
             base.SetItem(index, (T)trackable);
             _insertingItem?.Invoke(index, (T)trackable);
         }
 
+        private void Trackable_StatusChanged(object sender, StatusChangedEventArgs e)
+        {
+            _childStatusChanged(e);
+        }
+
         protected override void RemoveItem(int index)
         {
-            if (_DeleteItem != null)
+            var item = this[index];
+            _DeleteItem(item, index);
+
+            if (item is IChangeTrackable<T> trackable)
             {
-                var item = this[index];
-                _DeleteItem(item, index);
+                trackable.StatusChanged -= Trackable_StatusChanged;
             }
+
             base.RemoveItem(index);
         }
 
@@ -77,13 +109,17 @@ namespace ChangeTracking
                 newItem = Activator.CreateInstance<T>();
             }
 
-            object trackable = newItem as IChangeTrackable<T>;
+            IChangeTrackable<T> trackable = newItem as IChangeTrackable<T>;
             if (trackable == null)
             {
-                trackable = newItem.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+                trackable = (IChangeTrackable<T>)newItem.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
                 var editable = (IEditableObject)trackable;
                 editable.BeginEdit();
             }
+
+            trackable.StatusChanged -= Trackable_StatusChanged;
+            trackable.StatusChanged += Trackable_StatusChanged;
+
             Add((T)trackable);
 
             return trackable;

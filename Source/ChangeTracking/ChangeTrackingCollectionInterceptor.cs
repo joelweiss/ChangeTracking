@@ -9,9 +9,11 @@ namespace ChangeTracking
 {
     internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IChangeTrackableCollection<T>, IInterceptorSettings where T : class
     {
-        private ChangeTrackingBindingList<T> _WrappedTarget;
-        internal IList<IndexedItem<T>> _DeletedItems;
-        internal IList<IndexedItem<T>> _AddedItems;
+        private readonly ChangeTrackingBindingList<T> _WrappedTarget;
+        internal readonly List<IndexedItem<T>> _DeletedItems;
+        internal readonly List<IndexedItem<T>> _AddedItems;
+        internal readonly List<T> _ChangedItems;
+        internal readonly List<T> _UnchangedItems;
         private static HashSet<string> _ImplementedMethods;
         private static HashSet<string> _BindingListImplementedMethods;
         private static HashSet<string> _IBindingListImplementedMethods;
@@ -33,13 +35,19 @@ namespace ChangeTracking
         {
             _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
             _MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
-            for (int i = 0; i < target.Count; i++)
-            {
-                target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
-            }
-            _WrappedTarget = new ChangeTrackingBindingList<T>(target, InsertingItem, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             _DeletedItems = new List<IndexedItem<T>>();
             _AddedItems = new List<IndexedItem<T>>();
+            _ChangedItems = new List<T>();
+            _UnchangedItems = new List<T>();
+
+            for (int i = 0; i < target.Count; i++)
+            {
+                var newItem = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+                target[i] = newItem;
+                _UnchangedItems.Add(newItem);
+            }
+
+            _WrappedTarget = new ChangeTrackingBindingList<T>(target, InsertingItem, DeleteItem, ItemCanceled, ChildStatusChanged, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
         }
 
         public void Intercept(IInvocation invocation)
@@ -87,7 +95,17 @@ namespace ChangeTracking
         private T InsertingItem(int index, T item)
         {
             if (_reverting || _undeleting)
+            {
+                if (_undeleting && item is IChangeTrackable<T> trackable)
+                {
+                    if (trackable.ChangeTrackingStatus == ChangeStatus.Unchanged)
+                        _UnchangedItems.Add(item);
+                    else if (trackable.ChangeTrackingStatus == ChangeStatus.Changed)
+                        _ChangedItems.Add(item);
+                }
+
                 return item;
+            }
 
             var deletedItem = _DeletedItems.FirstOrDefault(d => d.Item == item);
             if (deletedItem != null)
@@ -127,9 +145,38 @@ namespace ChangeTracking
             _WrappedTarget.CancelNew(_WrappedTarget.IndexOf(item));
         }
 
+        private void ChildStatusChanged(StatusChangedEventArgs args)
+        {
+            var item = (T) args.Proxy;
+            if (args.OldStatus == ChangeStatus.Unchanged)
+            {
+                _UnchangedItems.Remove(item);
+            }
+            if (args.OldStatus == ChangeStatus.Changed)
+            {
+                _ChangedItems.Remove(item);
+            }
+
+
+            if (args.NewStatus == ChangeStatus.Unchanged)
+            {
+                if(!_UnchangedItems.Contains(item))
+                    _UnchangedItems.Add(item);
+            }
+            if (args.NewStatus == ChangeStatus.Changed)
+            {
+                if (!_ChangedItems.Contains(item))
+                    _ChangedItems.Add(item);
+            }
+        }
+
         public IEnumerable<T> UnchangedItems
         {
-            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>(); }
+            get
+            {
+                return _UnchangedItems;
+                //_WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>(); 
+            }
         }
 
         public IEnumerable<T> AddedItems
@@ -139,7 +186,10 @@ namespace ChangeTracking
 
         public IEnumerable<T> ChangedItems
         {
-            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>(); }
+            get {
+                return _ChangedItems;
+                //_WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>();
+            }
         }
 
         public IEnumerable<T> DeletedItems
@@ -174,9 +224,20 @@ namespace ChangeTracking
 
         public void AcceptChanges()
         {
-            foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
+            var allChangedItems = _AddedItems.Select(a => a.Item).Concat(_DeletedItems.Select(a => a.Item))
+                .Concat(_ChangedItems).Cast<IChangeTrackable<T>>().ToArray();
+            
+            foreach (var item in allChangedItems)
             {
-                item.AcceptChanges();
+                if ((item.ChangeTrackingStatus == ChangeStatus.Added ||
+                     item.ChangeTrackingStatus == ChangeStatus.Changed) &&
+                    !_UnchangedItems.Contains((T) item))
+                {
+                    _UnchangedItems.Add((T)item);
+
+                    item.AcceptChanges();
+                }
+
                 var editable = item as System.ComponentModel.IEditableObject;
                 if (editable != null)
                 {
@@ -185,6 +246,7 @@ namespace ChangeTracking
             }
             _DeletedItems.Clear();
             _AddedItems.Clear();
+            _ChangedItems.Clear();
         }
 
         public void RejectChanges()
@@ -192,6 +254,13 @@ namespace ChangeTracking
             try
             {
                 _reverting = true;
+
+                foreach (var revertedItem in _DeletedItems.Select(a => a.Item).Concat(_ChangedItems))
+                {
+                    if (!_UnchangedItems.Contains(revertedItem))
+                        _UnchangedItems.Add(revertedItem);
+                }
+
                 AddedItems.ToList().ForEach(i => _WrappedTarget.Remove(i));
                 _AddedItems.Clear();
                 foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
@@ -215,7 +284,7 @@ namespace ChangeTracking
         {
             get
             {
-                return ChangedItems.Any() || _AddedItems.Count != 0 || _DeletedItems.Count != 0;
+                return _ChangedItems.Any() || _AddedItems.Count != 0 || _DeletedItems.Count != 0;
             }
         }
 

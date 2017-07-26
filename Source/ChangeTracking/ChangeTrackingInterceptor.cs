@@ -9,10 +9,24 @@ using System.Text;
 
 namespace ChangeTracking
 {
+    public class StatusChangedEventArgs : EventArgs
+    {
+        public object Proxy { get; }
+        public ChangeStatus OldStatus { get; }
+        public ChangeStatus NewStatus { get; }
+
+        public StatusChangedEventArgs(object proxy, ChangeStatus oldStatus, ChangeStatus newStatus)
+        {
+            Proxy = proxy;
+            OldStatus = oldStatus;
+            NewStatus = newStatus;
+        }
+    }
+
     internal sealed class ChangeTrackingInterceptor<T> : IInterceptor, IInterceptorSettings where T : class
     {
         private Dictionary<string, object> _OriginalValueDictionary;
-        internal EventHandler _StatusChanged = delegate { };
+        internal EventHandler<StatusChangedEventArgs> _StatusChanged = delegate { };
         private static Dictionary<string, PropertyInfo> _Properties;
         private ChangeStatus _ChangeTrackingStatus;
         private readonly Dictionary<string, Delegate> _StatusChangedEventHandlers;
@@ -108,10 +122,10 @@ namespace ChangeTracking
                     invocation.ReturnValue = GetCurrent((T)invocation.Proxy);
                     break;
                 case "add_StatusChanged":
-                    _StatusChanged += (EventHandler)invocation.Arguments[0];
+                    _StatusChanged += (EventHandler<StatusChangedEventArgs>)invocation.Arguments[0];
                     break;
                 case "remove_StatusChanged":
-                    _StatusChanged -= (EventHandler)invocation.Arguments[0];
+                    _StatusChanged -= (EventHandler<StatusChangedEventArgs>)invocation.Arguments[0];
                     break;
                 case "Delete":
                     invocation.ReturnValue = Delete(invocation.Proxy);
@@ -277,8 +291,9 @@ namespace ChangeTracking
         {
             if (_ChangeTrackingStatus != ChangeStatus.Deleted)
             {
+                var oldStatus = _ChangeTrackingStatus;
                 _ChangeTrackingStatus = ChangeStatus.Deleted;
-                _StatusChanged(proxy, EventArgs.Empty);
+                _StatusChanged(proxy, new StatusChangedEventArgs(proxy, oldStatus, _ChangeTrackingStatus));
                 return true;
             }
             return false;
@@ -306,8 +321,9 @@ namespace ChangeTracking
                 var newChangeStatus = ChangeStatus.Added;
                 if (_ChangeTrackingStatus != newChangeStatus)
                 {
+                    var oldStatus = _ChangeTrackingStatus;
                     _ChangeTrackingStatus = newChangeStatus;
-                    _StatusChanged(proxy, EventArgs.Empty);
+                    _StatusChanged(proxy, new StatusChangedEventArgs(proxy, oldStatus, _ChangeTrackingStatus));
                 }
             }
         }
@@ -363,7 +379,7 @@ namespace ChangeTracking
                 var trackable = oldChild as IChangeTrackable;
                 if (trackable != null)
                 {
-                    trackable.StatusChanged -= (EventHandler)handler;
+                    trackable.StatusChanged -= (EventHandler<StatusChangedEventArgs>)handler;
                     _StatusChangedEventHandlers.Remove(propertyName);
                     return;
                 }
@@ -383,7 +399,7 @@ namespace ChangeTracking
                 var newChild = newValue as IChangeTrackable;
                 if (newChild != null)
                 {
-                    EventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
+                    EventHandler<StatusChangedEventArgs> newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
                     newChild.StatusChanged += newHandler;
                     _StatusChangedEventHandlers.Add(propertyName, newHandler);
                     return;
@@ -405,8 +421,9 @@ namespace ChangeTracking
                 var newChangeStatus = GetNewChangeStatus(proxy);
                 if (_ChangeTrackingStatus != newChangeStatus)
                 {
+                    var oldStatus = _ChangeTrackingStatus;
                     _ChangeTrackingStatus = newChangeStatus;
-                    _StatusChanged(proxy, EventArgs.Empty);
+                    _StatusChanged(proxy, new StatusChangedEventArgs(proxy, oldStatus, _ChangeTrackingStatus));
                 }
             }
         }
