@@ -280,13 +280,7 @@ namespace ChangeTracking
             }
         }
 
-        public bool IsChanged
-        {
-            get
-            {
-                return _ChangedItems.Any() || _AddedItems.Count != 0 || _DeletedItems.Count != 0;
-            }
-        }
+        public bool IsChanged => _ChangedItems.Count != 0 || _AddedItems.Count != 0 || _DeletedItems.Count != 0;
 
         public IEnumerator<T> GetEnumerator()
         {
