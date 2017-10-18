@@ -39,6 +39,9 @@ namespace ChangeTracking
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
 
+            if (target is IChangeTrackable)
+                return target;
+
             var targetType = target?.GetType() ?? type;
             var changeTrackingInterceptor = CreateInstance(typeof(ChangeTrackingInterceptor<>).MakeGenericType(targetType), ChangeStatus.Unchanged);
             var notifyPropertyChangedInterceptor = CreateInstance(typeof(NotifyPropertyChangedInterceptor<>).MakeGenericType(targetType), changeTrackingInterceptor);
