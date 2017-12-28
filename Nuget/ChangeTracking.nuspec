@@ -14,7 +14,7 @@ By using Castle Dynamic Proxy to create proxies of your classes at runtime, you 
         <summary>Track changes in your POCO objects, and in your collections.</summary>
         <tags>ChangeTracking DynamicProxy Change Tracking POCO</tags>
         <dependencies>
-            <dependency id="Castle.Core" version="4.1.0" />
+            <dependency id="Castle.Core" version="4.2.1" />
         </dependencies>
     </metadata>
     <files>
