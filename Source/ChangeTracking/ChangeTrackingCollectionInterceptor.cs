@@ -292,15 +292,15 @@ namespace ChangeTracking
             return GetEnumerator();
         }
 
-        internal class IndexedItem<T>
+        internal class IndexedItem<TT>
         {
-            public IndexedItem(T item, int index, ChangeStatus previousStatus)
+            public IndexedItem(TT item, int index, ChangeStatus previousStatus)
             {
                 Item = item;
                 Index = index;
                 PreviousStatus = previousStatus;
             }
-            public T Item { get; set; }
+            public TT Item { get; set; }
             public int Index { get; set; }
             public ChangeStatus PreviousStatus { get; set; }
         }
