@@ -1,4 +1,5 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/n9j44hcpe2wmkkgd?svg=true)](https://ci.appveyor.com/project/joelweiss/changetracking)
+[![Build status](https://ci.appveyor.com/api/projects/status/n9j44hcpe2wmkkgd/branch/master?svg=true)](https://ci.appveyor.com/project/joelweiss/changetracking/branch/master)
+
 
 # ChangeTracking
 
