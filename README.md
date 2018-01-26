@@ -117,6 +117,7 @@ Requirements and restrictions
 --------------------------------
 
 * .net 4 and above
+* netstandard 2.0
 
 ##### For Plain objects
 * Your class must not be `sealed` and all members in your class must be `public virtual`
