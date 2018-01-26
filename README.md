@@ -1,6 +1,6 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/n9j44hcpe2wmkkgd?svg=true)](https://ci.appveyor.com/project/joelweiss/changetracking)
 
-#ChangeTracking
+# ChangeTracking
 
 Track changes in your POCO objects, and in your collections.
 By using [Castle Dynamic Proxy](http://www.castleproject.org/projects/dynamicproxy/) to create proxies of your classes at runtime, you can use your objects just like you used to, and just by calling the `AsTrackable()` extension method, you get automatic change tracking, and cancellation.
@@ -17,7 +17,7 @@ PM> Install-Package ChangeTracking
 Example
 ---------
 
-###To make an object trackable
+### To make an object trackable
 ```csharp
 using ChangeTracking;
 //...
@@ -81,7 +81,7 @@ or
 ```csharp
 var trackable = order.AsTrackable(makeCollectionPropertiesTrackable: false);
 ```
-###And on a collection
+### And on a collection
 ```csharp
 var orders = new List<Order>{new Order { Id = 1, CustumerNumber = "Test" } };
 IList<Order> trackableOrders = orders.AsTrackable();
@@ -117,7 +117,7 @@ Requirements and restrictions
 
 * .net 4 and above
 
-#####For Plain objects
+##### For Plain objects
 * Your class must not be `sealed` and all members in your class must be `public virtual`
 
 	```csharp
@@ -130,7 +130,7 @@ Requirements and restrictions
 	}
 	```
 
-#####For Collections 
+##### For Collections 
 * You can only assign the created proxy to one of the implemented interfaces, i.e. `ICollection<T>`, `IList<T>` and `IBindingList`, and the `AsTrackable<T>()` will choose the correct extennsion method only if called on `IList<T>`, `IList`, `ICollection<T>` and `ICollection`.
 
 	```csharp
