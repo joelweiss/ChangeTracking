@@ -4,6 +4,18 @@
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
     <AssemblyName>ChangeTracking</AssemblyName>
     <RootNamespace>ChangeTracking</RootNamespace>
+    <Version>1.0.0-Beta</Version>
+    <Authors>Joel Weiss</Authors>
+    <Company />
+    <Product>Change Tracking</Product>
+    <Description>Track changes in your POCO objects, and in your collections.
+
+By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation.</Description>
+    <PackageLicenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md&lt;/licenseUrl</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/joelweiss/ChangeTracking</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/joelweiss/ChangeTracking</RepositoryUrl>
+    <PackageTags>ChangeTracking DynamicProxy Change Tracking POCO</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
