@@ -6,7 +6,6 @@ namespace ChangeTracking.Tests
 {
     public class IBindingListTests
     {
-#if NET452
         [Fact]
         public void AsTrackable_On_Collection_Should_Make_It_ICancelAddNew()
         {
@@ -35,10 +34,10 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
 
-            bindingList.MonitorEvents();
+            EventMonitor monitor = bindingList.MonitorListChanged();
             bindingList.AddNew();
 
-            bindingList.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
         [Fact]
@@ -49,10 +48,10 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
 
-            bindingList.MonitorEvents();
+            EventMonitor monitor = bindingList.MonitorListChanged();
             trackable.Remove(trackable[0]);
 
-            bindingList.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
         [Fact]
@@ -80,10 +79,10 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
 
-            bindingList.MonitorEvents();
+            EventMonitor monitor = bindingList.MonitorListChanged();
             ((Order)bindingList[0]).Id = 123;
 
-            bindingList.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }        
 
         [Fact]
@@ -101,10 +100,10 @@ namespace ChangeTracking.Tests
             first.Id = 963;
 
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
             trackable.CastToIChangeTrackableCollection().AcceptChanges();            
 
-            trackable.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
         [Fact]
@@ -113,10 +112,10 @@ namespace ChangeTracking.Tests
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
             trackable.CastToIChangeTrackableCollection().AcceptChanges();
 
-            trackable.ShouldNotRaise("ListChanged");
+            monitor.WasRaised.Should().BeFalse();
         }
 
         [Fact]
@@ -128,12 +127,12 @@ namespace ChangeTracking.Tests
             var first = trackable.First();
             first.Id = 963;
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
 
 
             trackable.CastToIChangeTrackableCollection().RejectChanges();
 
-            trackable.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
         [Fact]
@@ -142,11 +141,10 @@ namespace ChangeTracking.Tests
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
             trackable.CastToIChangeTrackableCollection().RejectChanges();
 
-            trackable.ShouldNotRaise("ListChanged");
+            monitor.WasRaised.Should().BeFalse();
         }
-#endif
     }
 }
