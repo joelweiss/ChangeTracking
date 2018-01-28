@@ -1,17 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class IChangeTrackableCollectionTests
     {
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_Should_Make_Object_Implement_IChangeTrackableCollection()
         {
             var orders = Helper.GetOrdersIList();
@@ -21,7 +18,7 @@ namespace ChangeTracking.Tests
             trackable.Should().BeAssignableTo<IChangeTrackableCollection<Order>>();
         }
 
-        [TestMethod]
+        [Fact]
         public void When_AsTrackable_On_Collection_CastToIChangeTrackableCollection_Should_Not_Throw_InvalidCastException()
         {
             var orders = Helper.GetOrdersIList();
@@ -31,7 +28,7 @@ namespace ChangeTracking.Tests
             trackable.Invoking(o => o.CastToIChangeTrackableCollection()).ShouldNotThrow<InvalidCastException>();
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Not_AsTrackable_On_Collection_CastToIChangeTrackableCollection_Should_Throw_InvalidCastException()
         {
             var orders = Helper.GetOrdersIList();
@@ -39,7 +36,7 @@ namespace ChangeTracking.Tests
             orders.Invoking(o => o.CastToIChangeTrackableCollection()).ShouldThrow<InvalidCastException>();
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Calling_AsTrackable_On_Collection_Already_Tracking_Should_Throw()
         {
             var orders = Helper.GetOrdersIList();
@@ -50,7 +47,7 @@ namespace ChangeTracking.Tests
             orders.Invoking(list => list.AsTrackable()).ShouldThrow<InvalidOperationException>();
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Calling_AsTrackable_On_Collection_All_Items_Should_Become_Trackable()
         {
             var orders = Helper.GetOrdersIList();
@@ -60,7 +57,7 @@ namespace ChangeTracking.Tests
             orders.Should().ContainItemsAssignableTo<IChangeTrackable<Order>>();
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Adding_To_Collection_Should_Be_IChangeTracableTrackable()
         {
             var orders = Helper.GetOrdersIList();
@@ -71,7 +68,7 @@ namespace ChangeTracking.Tests
             trackable.Single(o => o.Id == 999999999).Should().BeAssignableTo<IChangeTrackable<Order>>();
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Adding_To_Collection_Status_Should_Be_Added()
         {
             var orders = Helper.GetOrdersIList();
@@ -82,7 +79,7 @@ namespace ChangeTracking.Tests
             trackable.Single(o => o.Id == 999999999).CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Adding_To_Collection_Via_Indexer_Status_Should_Be_Added()
         {
             IList<Order> list = Helper.GetOrdersIList();
@@ -93,7 +90,7 @@ namespace ChangeTracking.Tests
             trackable.Single(o => o.Id == 999999999).CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Added);
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Deleting_From_Collection_Status_Should_Be_Deleted()
         {
             var orders = Helper.GetOrdersIList();
@@ -105,7 +102,7 @@ namespace ChangeTracking.Tests
             first.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Deleted);
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Deleting_From_Collection_Should_Be_Added_To_DeletedItems()
         {
             var orders = Helper.GetOrdersIList();
@@ -118,7 +115,7 @@ namespace ChangeTracking.Tests
                 .And.OnlyContain(o => o.Id == first.Id && o.CustomerNumber == first.CustomerNumber);
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Deleting_From_Collection_Item_That_Status_Is_Added_Should_Not_Be_Added_To_DeletedItems()
         {
             var orders = Helper.GetOrdersIList();
@@ -135,7 +132,7 @@ namespace ChangeTracking.Tests
                 .And.OnlyContain(o => o.Id == first.Id && o.CustomerNumber == first.CustomerNumber);
         }
 
-        [TestMethod]
+        [Fact]
         public void When_Using_Not_On_List_Of_T_Or_Collection_Of_T_Should_Throw()
         {
             var orders = Helper.GetOrdersIList().ToArray();
@@ -143,7 +140,7 @@ namespace ChangeTracking.Tests
             orders.Invoking(o => o.AsTrackable()).ShouldThrow<InvalidOperationException>();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_Should_Make_It_IRevertibleChangeTracking()
         {
             var orders = Helper.GetOrdersIList();
@@ -153,7 +150,7 @@ namespace ChangeTracking.Tests
             trackable.Should().BeAssignableTo<System.ComponentModel.IRevertibleChangeTracking>();
         }
 
-        [TestMethod]
+        [Fact]
         public void AcceptChanges_On_Collection_Should_All_Items_Status_Be_Unchanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -168,7 +165,7 @@ namespace ChangeTracking.Tests
             trackable.All(o => o.CastToIChangeTrackable().ChangeTrackingStatus == ChangeStatus.Unchanged).Should().BeTrue();
         }
 
-        [TestMethod]
+        [Fact]
         public void AcceptChanges_On_Collection_Should_AcceptChanges()
         {
             var orders = Helper.GetOrdersIList();
@@ -188,7 +185,7 @@ namespace ChangeTracking.Tests
             collectionintf.ChangedItems.Count().Should().Be(0);
         }
 
-        [TestMethod]
+        [Fact]
         public void AcceptChanges_On_Collection_Should_Clear_DeletedItems()
         {
             var orders = Helper.GetOrdersIList();
@@ -206,7 +203,7 @@ namespace ChangeTracking.Tests
             trackable.All(o => o.CastToIChangeTrackable().ChangeTrackingStatus == ChangeStatus.Unchanged).Should().BeTrue();
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_Should_All_Items_Status_Be_Unchanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -223,7 +220,7 @@ namespace ChangeTracking.Tests
             intf.ChangedItems.Count().Should().Be(0);
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_Should_RejectChanges()
         {
             var orders = Helper.GetOrdersIList();
@@ -248,7 +245,7 @@ namespace ChangeTracking.Tests
             intf.UnchangedItems.Count().Should().Be(intf.Count());
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_Should_Move_DeletedItems_Back_To_Unchanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -263,7 +260,7 @@ namespace ChangeTracking.Tests
             intf.UnchangedItems.Count().Should().Be(10);
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_Should_RejectChanges_Only_After_Last_AcceptChanges()
         {
             var orders = Helper.GetOrdersIList();
@@ -286,7 +283,7 @@ namespace ChangeTracking.Tests
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
         }
 
-        [TestMethod]
+        [Fact]
         public void UnDelete_Should_Move_Back_Item_From_DeletedItems_And_Change_Back_Status()
         {
             var orders = Helper.GetOrdersIList();
@@ -301,7 +298,7 @@ namespace ChangeTracking.Tests
             first.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
         }
 
-        [TestMethod]
+        [Fact]
         public void Can_Enumerate_IChangeTrackableCollection()
         {
             var orders = Helper.GetOrdersIList();
@@ -310,7 +307,7 @@ namespace ChangeTracking.Tests
             trackable.Invoking(t => t.FirstOrDefault()).ShouldNotThrow();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_ICollection_Should_Convert_ToIList_Internally()
         {
             IList<Order> orders = Helper.GetOrdersIList();

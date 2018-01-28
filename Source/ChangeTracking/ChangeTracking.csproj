@@ -1,77 +1,35 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{D64C2F5E-4951-4E6C-8B18-4DF4BA298716}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ChangeTracking</RootNamespace>
+    <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
     <AssemblyName>ChangeTracking</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
+    <RootNamespace>ChangeTracking</RootNamespace>
+    <Version>2.0.0-Beta</Version>
+    <Authors>Joel Weiss</Authors>
+    <Company />
+    <Product>Change Tracking</Product>
+    <Description>Track changes in your POCO objects, and in your collections.
+
+By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation.</Description>
+    <PackageLicenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md&lt;/licenseUrl</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/joelweiss/ChangeTracking</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/joelweiss/ChangeTracking</RepositoryUrl>
+    <PackageTags>ChangeTracking DynamicProxy Change Tracking POCO</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Castle.Core">
-      <HintPath>..\packages\Castle.Core.3.2.2\lib\net40-client\Castle.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
+    <PackageReference Include="Castle.Core" Version="4.2.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.CSharp">
+      <Version>4.4.1</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ChangeTrackingBindingList.cs" />
-    <Compile Include="ChangeStatus.cs" />
-    <Compile Include="ChangeTrackingCollectionInterceptor.cs" />
-    <Compile Include="ChangeTrackingInterceptor.cs" />
-    <Compile Include="ChangeTrackingInterceptorSelector.cs" />
-    <Compile Include="CollectionPropertyInterceptor.cs" />
-    <Compile Include="ComplexPropertyInterceptor.cs" />
-    <Compile Include="EditableObjectInterceptor.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="IChangeTrackingManager.cs" />
-    <Compile Include="ChangeTrackingProxyGenerationHook.cs" />
-    <Compile Include="IChangeTrackable.cs" />
-    <Compile Include="IChangeTrackableCollection.cs" />
-    <Compile Include="ICollectionPropertyTrackable.cs" />
-    <Compile Include="IComplexPropertyTrackable.cs" />
-    <Compile Include="IInterceptorSettings.cs" />
-    <Compile Include="NotifyPropertyChangedInterceptor.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Core.cs" />
-    <Compile Include="Utils.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

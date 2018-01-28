@@ -1,0 +1,19 @@
+version: 2.0.{build}-Beta
+configuration: Release
+pull_requests:
+  do_not_increment_build_number: true
+image: Visual Studio 2017
+dotnet_csproj:
+  patch: true
+  file: '**\ChangeTracking.csproj'
+  version: '{version}'
+  package_version: '{version}'
+before_build:
+- ps: dotnet restore Source\ChangeTracking.sln
+build:
+  project: Source\ChangeTracking.sln
+  publish_nuget: true
+  verbosity: minimal
+test_script:
+- ps: >-
+    dotnet test Source\ChangeTracking.Tests\ChangeTracking.Tests.csproj
