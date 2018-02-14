@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
@@ -109,17 +108,24 @@ namespace ChangeTracking
             if (ignored)
                 return false;
 
-            return 
-                // allow user to define properties that have an interface as property type
-                // to avoid conflicts with the CollectionPropertyInterceptor, 
-                // we exclude all properties whose type implements the "System.Collections.IEnumerable" interface
-                ((propertyType.IsInterface && !typeof(IEnumerable).IsAssignableFrom(propertyType)) 
-                || 
-                (propertyType.IsClass &&
-                    !propertyType.IsSealed &&
-                    propertyType.GetConstructor(Type.EmptyTypes) != null &&
-                    propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Any(pi => pi.CanRead && pi.CanWrite) &&
-                    propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => pi.CanRead && pi.CanWrite && pi.GetAccessors()[0].IsVirtual)));
+            // allow user to define properties that have an interface as property type
+            // to avoid conflicts with the CollectionPropertyInterceptor, 
+            // we exclude all properties whose type implements the "System.Collections.IEnumerable" interface
+            if (propertyType.IsInterface && !typeof(IEnumerable).IsAssignableFrom(propertyType))
+                return true;
+
+            var canComplexPropertyBeTrackable =
+                propertyType.IsClass &&
+                !propertyType.IsSealed &&
+                propertyType.GetConstructor(Type.EmptyTypes) != null;
+
+            if (canComplexPropertyBeTrackable == false)
+                return false;
+
+            var elements = propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(pi => pi.GetCustomAttributes(typeof(IgnoreAttribute), true).Any() || (pi.CanRead && pi.CanWrite));
+
+            return elements.Any() &&
+                   elements.All(pi => pi.GetAccessors()[0].IsVirtual);
         }
 
         public void Intercept(IInvocation invocation)

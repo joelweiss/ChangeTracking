@@ -1,6 +1,5 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using ChangeTracking;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -65,6 +64,19 @@ namespace ChangeTracking.Tests
             }
             swTracked.Stop();
             TestContext.WriteLine("Write and Read {0:N0} tracked objects: {1} ms", reps, swTracked.ElapsedMilliseconds);
+
+            GC.Collect();
+            var swGetOriginal = new Stopwatch();
+            swGetOriginal.Start();
+            for (int i = 0; i < trackedList.Count; i++)
+            {
+                var original = ((IChangeTrackableInternal)trackedList[i]).GetOriginal();
+            }
+            swGetOriginal.Stop();
+            TestContext.WriteLine("Call GetOriginal on {0:N0} tracked objects: {1} ms", reps, swGetOriginal.ElapsedMilliseconds);
+
+            var timeNeeded = swAsTrackable.ElapsedMilliseconds + swNotTracked.ElapsedMilliseconds + swTracked.ElapsedMilliseconds + swGetOriginal.ElapsedMilliseconds;
+            TestContext.WriteLine("Finished for {0:N0} tracked objects in {1} ms", reps, timeNeeded);
         }
     }
 }
