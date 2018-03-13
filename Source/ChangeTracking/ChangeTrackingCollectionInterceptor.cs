@@ -267,6 +267,15 @@ namespace ChangeTracking
                 {
                     item.RejectChanges();
                 }
+
+                // If someone removes two objects from a collection and reverts it then the order of the deleted objects is inverted
+                // For example:
+                //      collection.RemoveAt(0);
+                //      collection.RemoveAt(0);
+                //      trackable.RejectChanges();
+                //
+                _DeletedItems.Reverse();
+
                 foreach (var item in _DeletedItems.OrderBy(i => i.Index))
                 {
                     ((System.ComponentModel.IRevertibleChangeTracking) item.Item).RejectChanges();
