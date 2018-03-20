@@ -1,5 +1,6 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/n9j44hcpe2wmkkgd/branch/master?svg=true)](https://ci.appveyor.com/project/joelweiss/changetracking/branch/master)
 [![NuGet Badge](https://buildstats.info/nuget/ChangeTracking?includePreReleases=true)](https://www.nuget.org/packages/ChangeTracking/)
+[![Test status](https://img.shields.io/appveyor/tests/JoelWeiss/ChangeTracking.svg)](https://ci.appveyor.com/project/JoelWeiss/ChangeTracking/branch/master)
 
 # ChangeTracking
 
