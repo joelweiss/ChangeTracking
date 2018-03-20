@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace ChangeTracking.Tests
@@ -19,6 +20,11 @@ namespace ChangeTracking.Tests
         public static EventMonitor MonitorStatusChanged(this object trackable)
         {
             return new EventMonitor<EventHandler>(trackable, nameof(IChangeTrackable.StatusChanged), action => (_, __) => action());
+        }
+
+        public static EventMonitor MonitorCollectionChangedChanged<T>(this IList<T> collection)
+        {
+            return new EventMonitor<NotifyCollectionChangedEventHandler>(collection, nameof(INotifyCollectionChanged.CollectionChanged), action => (_, __) => action());
         }
     }
 

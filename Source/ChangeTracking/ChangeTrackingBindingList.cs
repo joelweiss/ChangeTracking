@@ -1,18 +1,18 @@
-﻿using Castle.DynamicProxy;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
 
 namespace ChangeTracking
 {
-    internal sealed class ChangeTrackingBindingList<T> : BindingList<T> where T : class
+    internal sealed class ChangeTrackingBindingList<T> : BindingList<T>, INotifyCollectionChanged where T : class
     {
         private readonly Action<T> _ItemCanceled;
         private Action<T> _DeleteItem;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
+
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
 
         public ChangeTrackingBindingList(IList<T> list, Action<T> deleteItem, Action<T> itemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
             : base(list)
@@ -38,6 +38,7 @@ namespace ChangeTracking
                 trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
             base.InsertItem(index, (T)trackable);
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         protected override void SetItem(int index, T item)
@@ -47,16 +48,30 @@ namespace ChangeTracking
             {
                 trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
+            T originalItem = this[index];
             base.SetItem(index, (T)trackable);
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, originalItem, index));
         }
 
         protected override void RemoveItem(int index)
         {
-            if (_DeleteItem != null)
-            {
-                _DeleteItem(this[index]);
-            }
+            T removedItem = this[index];
+            _DeleteItem?.Invoke(removedItem);
             base.RemoveItem(index);
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
+        }
+
+        protected override void OnListChanged(ListChangedEventArgs e)
+        {
+            base.OnListChanged(e);
+            switch (e.ListChangedType)
+            {
+                case ListChangedType.Reset:
+                    CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                    break;
+                default:
+                    return;
+            }
         }
 
         protected override object AddNewCore()
