@@ -1,9 +1,8 @@
 ﻿using Castle.DynamicProxy;
-using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
@@ -14,6 +13,7 @@ namespace ChangeTracking
         private static HashSet<string> _ImplementedMethods;
         private static HashSet<string> _BindingListImplementedMethods;
         private static HashSet<string> _IBindingListImplementedMethods;
+        private static HashSet<string> _INotifyCollectionChangedImplementedMethods;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
 
@@ -24,6 +24,7 @@ namespace ChangeTracking
             _ImplementedMethods = new HashSet<string>(typeof(ChangeTrackingCollectionInterceptor<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
             _BindingListImplementedMethods = new HashSet<string>(typeof(ChangeTrackingBindingList<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy).Select(m => m.Name));
             _IBindingListImplementedMethods = new HashSet<string>(typeof(ChangeTrackingBindingList<T>).GetInterfaceMap(typeof(System.ComponentModel.IBindingList)).TargetMethods.Where(mi => mi.IsPrivate).Select(mi => mi.Name.Substring(mi.Name.LastIndexOf('.') + 1)));
+            _INotifyCollectionChangedImplementedMethods = new HashSet<string>(typeof(INotifyCollectionChanged).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
         }
 
         internal ChangeTrackingCollectionInterceptor(IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
@@ -55,6 +56,11 @@ namespace ChangeTracking
                 invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
                 return;
             }
+            if (_INotifyCollectionChangedImplementedMethods.Contains(invocation.Method.Name))
+            {
+                invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                return;
+            }
             invocation.Proceed();
         }
 
@@ -69,30 +75,15 @@ namespace ChangeTracking
             }
         }
 
-        private void ItemCanceled(T item)
-        {
-            _WrappedTarget.CancelNew(_WrappedTarget.IndexOf(item));
-        }
+        private void ItemCanceled(T item) => _WrappedTarget.CancelNew(_WrappedTarget.IndexOf(item));
 
-        public IEnumerable<T> UnchangedItems
-        {
-            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>(); }
-        }
+        public IEnumerable<T> UnchangedItems => _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>();
 
-        public IEnumerable<T> AddedItems
-        {
-            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Added).Cast<T>(); }
-        }
+        public IEnumerable<T> AddedItems => _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Added).Cast<T>();
 
-        public IEnumerable<T> ChangedItems
-        {
-            get { return _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>(); }
-        }
+        public IEnumerable<T> ChangedItems => _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>();
 
-        public IEnumerable<T> DeletedItems
-        {
-            get { return _DeletedItems.Select(i => i); }
-        }
+        public IEnumerable<T> DeletedItems => _DeletedItems.Select(i => i);
 
         public bool UnDelete(T item)
         {
@@ -115,8 +106,7 @@ namespace ChangeTracking
             foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
             {
                 item.AcceptChanges();
-                var editable = item as System.ComponentModel.IEditableObject;
-                if (editable != null)
+                if (item is System.ComponentModel.IEditableObject editable)
                 {
                     editable.EndEdit();
                 }
@@ -139,22 +129,10 @@ namespace ChangeTracking
             _DeletedItems.Clear();
         }
 
-        public bool IsChanged
-        {
-            get
-            {
-                return ChangedItems.Any() || AddedItems.Any() || DeletedItems.Any();
-            }
-        }
+        public bool IsChanged => ChangedItems.Any() || AddedItems.Any() || DeletedItems.Any();
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return _WrappedTarget.GetEnumerator();
-        }
+        public IEnumerator<T> GetEnumerator() => _WrappedTarget.GetEnumerator();
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
