@@ -25,26 +25,26 @@ using ChangeTracking;
 //...
 Order order = new Order 
 { 
-	Id = 1,
-	CustumerNumber = "Test",
-	Address = new Address
-	{
-		AddressId = 1,
-		City = "New York"
-	},
-	OrderDetails = new List<OrderDetail>
-	{
-		new OrderDetail
-		{
-			OrderDetailId = 1,
-			ItemNo = "Item123"
-		},
-		new OrderDetail
-		{
-			OrderDetailId = 2,
-			ItemNo = "Item369"
-		}
-	}
+    Id = 1,
+    CustumerNumber = "Test",
+    Address = new Address
+    {
+        AddressId = 1,
+        City = "New York"
+    },
+    OrderDetails = new List<OrderDetail>
+    {
+        new OrderDetail
+        {
+            OrderDetailId = 1,
+            ItemNo = "Item123"
+        },
+        new OrderDetail
+        {
+            OrderDetailId = 2,
+            ItemNo = "Item369"
+        }
+    }
 };
 Order trackedOrder = order.AsTrackable();
 ```
@@ -123,19 +123,19 @@ Requirements and restrictions
 ##### For Plain objects
 * Your class must not be `sealed` and all members in your class must be `public virtual`
 
-	```csharp
-	public class Order
-	{
-		public virtual int Id { get; set; }
-		public virtual string CustumerNumber { get; set; }
+    ```csharp
+    public class Order
+    {
+        public virtual int Id { get; set; }
+        public virtual string CustumerNumber { get; set; }
         public virtual Address  Address { get; set; }
         public virtual IList<OrderDetail> OrderDetails { get; set; }
-	}
-	```
+    }
+    ```
 
 ##### For Collections 
 * You can only assign the created proxy to one of the implemented interfaces, i.e. `ICollection<T>`, `IList<T>` and `IBindingList`, and the `AsTrackable<T>()` will choose the correct extennsion method only if called on `IList<T>`, `IList`, `ICollection<T>` and `ICollection`.
 
-	```csharp
-	IList<Order> orders = new List<Order>().AsTrackable();
-	```
+    ```csharp
+    IList<Order> orders = new List<Order>().AsTrackable();
+    ```
