@@ -74,7 +74,7 @@ trackable.RejectChanges();
 //Calling AcceptChanges will accept all the changes you made, clears the original values and set ChangeTrackingStatus to Unchanged
 trackable.AcceptChanges();
 
-//If ChangeTrackingStatus is Changed it returns all changed property names, if ChangeTrackingStatus is Added or Deleted it returns all prperties
+//If ChangeTrackingStatus is Changed it returns all changed property names, if ChangeTrackingStatus is Added or Deleted it returns all properties
 trackable.ChangedProperties();
 ```
 By default complex properties and collection properties will be tracked (if it can be made trackable) as well.
