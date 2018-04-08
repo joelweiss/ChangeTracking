@@ -629,5 +629,26 @@ namespace ChangeTracking.Tests
             trackable.CastToIChangeTrackable().IsChanged.Should().BeFalse();
             trackable.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
         }
+
+
+
+        [Fact]
+        public void When_Nothing_Is_Changed_ChangedProperties_Should_BeEmpty()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void When_Changed_ChangedProperties_Should_ReturnChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            trackable.CustomerNumber = "Change";
+
+            trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEquivalentTo(nameof(Order.CustomerNumber));
+        }
     }
 }

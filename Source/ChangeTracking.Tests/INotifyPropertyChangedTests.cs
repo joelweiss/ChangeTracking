@@ -148,5 +148,18 @@ namespace ChangeTracking.Tests
 
             changeTrackable.ShouldRaisePropertyChangeFor(ct => ct.ChangeTrackingStatus);
         }
+
+        [Fact]
+        public void Change_Property_Should_Raise_PropertyChanged_On_ChangedProperties()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            ((INotifyPropertyChanged)trackable).MonitorEvents();
+
+            trackable.CustomerNumber = "Test1";
+            IChangeTrackable<Order> changeTrackable = trackable.CastToIChangeTrackable();
+
+            changeTrackable.ShouldRaisePropertyChangeFor(ct => ct.ChangedProperties);
+        }
     }
 }

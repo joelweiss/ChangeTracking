@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq.Expressions;
 
@@ -46,6 +47,7 @@ namespace ChangeTracking
     {
         event EventHandler StatusChanged;
         ChangeStatus ChangeTrackingStatus { get; }
+        IEnumerable<string> ChangedProperties { get; }
     }
 
     internal interface IChangeTrackableInternal

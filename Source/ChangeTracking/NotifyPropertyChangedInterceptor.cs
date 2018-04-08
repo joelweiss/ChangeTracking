@@ -23,7 +23,11 @@ namespace ChangeTracking
         {
             _PropertyChangedEventHandlers = new Dictionary<string, PropertyChangedEventHandler>();
             _ListChangedEventHandlers = new Dictionary<string, ListChangedEventHandler>();
-            changeTrackingInterceptor._StatusChanged += (o, e) => RaisePropertyChanged(o, nameof(IChangeTrackable.ChangeTrackingStatus));
+            changeTrackingInterceptor._StatusChanged += (o, e) =>
+            {
+                RaisePropertyChanged(o, nameof(IChangeTrackable.ChangeTrackingStatus));
+                RaisePropertyChanged(o, nameof(IChangeTrackable.ChangedProperties));
+            };
             PropertyChanged += delegate { };
         }
 
@@ -42,6 +46,7 @@ namespace ChangeTracking
                 if (!Equals(previousValue, newValue))
                 {
                     RaisePropertyChanged(invocation.Proxy, propertyName);
+                    RaisePropertyChanged(invocation.Proxy, nameof(IChangeTrackable.ChangedProperties));
                 }
                 if (!ReferenceEquals(previousValue, newValue))
                 {

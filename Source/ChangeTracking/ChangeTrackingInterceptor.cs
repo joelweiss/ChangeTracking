@@ -70,13 +70,17 @@ namespace ChangeTracking
             else if (invocation.Method.IsGetter())
             {
                 string propertyName = invocation.Method.PropertyName();
-                if (propertyName == "ChangeTrackingStatus")
+                if (propertyName == nameof(IChangeTrackable.ChangeTrackingStatus))
                 {
                     invocation.ReturnValue = _ChangeTrackingStatus;
                 }
-                else if (propertyName == "IsChanged")
+                else if (propertyName == nameof(System.ComponentModel.IChangeTracking.IsChanged))
                 {
                     invocation.ReturnValue = _ChangeTrackingStatus != ChangeStatus.Unchanged;
+                }
+                else if (propertyName == nameof(IChangeTrackable.ChangedProperties))
+                {
+                    invocation.ReturnValue = GetChangedProperties();
                 }
                 else
                 {
@@ -87,10 +91,10 @@ namespace ChangeTracking
             }
             switch (invocation.Method.Name)
             {
-                case "GetOriginalValue":
+                case nameof(IChangeTrackable<object>.GetOriginalValue):
                     invocation.ReturnValue = ((dynamic)this).GetOriginalValue((T)invocation.Proxy, (dynamic)invocation.Arguments[0]);
                     break;
-                case "GetOriginal":
+                case nameof(IChangeTrackable<object>.GetOriginal):
                     invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
                     break;
                 case "add_StatusChanged":
@@ -312,5 +316,20 @@ namespace ChangeTracking
         }
 
         private ChangeStatus GetNewChangeStatus(object sender) => _OriginalValueDictionary.Count == 0 && GetChildren(sender).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
+
+        private IEnumerable<string> GetChangedProperties()
+        {
+            switch (_ChangeTrackingStatus)
+            {
+                case ChangeStatus.Unchanged:
+                    return Enumerable.Empty<string>();
+                case ChangeStatus.Added:
+                case ChangeStatus.Deleted:
+                    return _Properties.Keys;
+                case ChangeStatus.Changed:
+                    return _OriginalValueDictionary.Keys;
+                default: throw null;
+            }
+        }
     }
 }
