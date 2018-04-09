@@ -120,7 +120,7 @@ trackable.RejectChanges();
 Requirements and restrictions
 --------------------------------
 
-* .net 4 and above
+* .net 4.5.2 and above
 * netstandard 2.0
 
 ##### For Plain objects
