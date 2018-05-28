@@ -16,6 +16,13 @@ build:
   project: Source\ChangeTracking.sln
   publish_nuget: true
   verbosity: minimal
+for:
+-
+  matrix:
+    only:
+      - image: Ubuntu
+  build_script:
+  - dotnet build Source\ChangeTracking.sln --framework netstandard2.0
 test_script:
 - ps: >-
     dotnet test Source\ChangeTracking.Tests\ChangeTracking.Tests.csproj
