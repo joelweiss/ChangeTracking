@@ -76,11 +76,11 @@ namespace ChangeTracking
 
                     object childTarget = invocation.Arguments[0];
                     object newValue;
-                    if (invocation.Arguments[0] == null)
+                    if (childTarget == null)
                     {
                         newValue = null;
                     }
-                    if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackable<>)) != null)
+                    else if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackable<>)) != null)
                     {
                         newValue = invocation.Arguments[0];
                     }

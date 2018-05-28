@@ -650,5 +650,21 @@ namespace ChangeTracking.Tests
 
             trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEquivalentTo(nameof(Order.CustomerNumber));
         }
+
+        [Fact]
+        public void Change_Property_From_Null_To_Null_Should_Not_Throw()
+        {
+            var trackable = new Order { Id = 321, }.AsTrackable();
+
+            trackable.Invoking(o => o.Address = null).ShouldNotThrow<NullReferenceException>();
+        }
+
+        [Fact]
+        public void Change_Property_From_Value_To_Null_Should_Not_Throw()
+        {
+            var trackable = new Order { Id = 321, Address = new Address() }.AsTrackable();
+
+            trackable.Invoking(o => o.Address = null).ShouldNotThrow<NullReferenceException>();
+        }
     }
 }

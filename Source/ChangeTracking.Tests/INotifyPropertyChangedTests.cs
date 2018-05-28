@@ -88,10 +88,10 @@ namespace ChangeTracking.Tests
             ((INotifyPropertyChanged)trackable).MonitorEvents();
 
             trackable.OrderDetails.Add(new OrderDetail
-                  {
-                      OrderDetailId = 123,
-                      ItemNo = "Item123"
-                  });
+            {
+                OrderDetailId = 123,
+                ItemNo = "Item123"
+            });
 
             trackable.ShouldRaisePropertyChangeFor(o => o.OrderDetails);
         }
@@ -104,10 +104,10 @@ namespace ChangeTracking.Tests
             ((INotifyPropertyChanged)trackable).MonitorEvents();
 
             trackable.OrderDetails.Add(new OrderDetail
-                  {
-                      OrderDetailId = 123,
-                      ItemNo = "Item123"
-                  });
+            {
+                OrderDetailId = 123,
+                ItemNo = "Item123"
+            });
 
             trackable.ShouldNotRaisePropertyChangeFor(o => o.OrderDetails);
         }
@@ -160,6 +160,19 @@ namespace ChangeTracking.Tests
             IChangeTrackable<Order> changeTrackable = trackable.CastToIChangeTrackable();
 
             changeTrackable.ShouldRaisePropertyChangeFor(ct => ct.ChangedProperties);
+        }
+
+        [Fact]
+        public void Change_Property_From_Value_To_Null_Should_Stop_Notification()
+        {
+            Order trackable = new Order { Id = 321, Address = new Address { AddressId = 0 } }.AsTrackable();
+            Address trackableAddress = trackable.Address;
+            trackable.Address = null;
+
+            trackable.CastToIChangeTrackable().MonitorEvents();
+            trackableAddress.AddressId = 2;
+
+            trackable.ShouldNotRaisePropertyChangeFor(o => o.Address);
         }
     }
 }
