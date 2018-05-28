@@ -22,7 +22,16 @@ for:
     only:
       - image: Ubuntu
   build_script:
-  - ps: dotnet build Source\ChangeTracking.sln --framework netstandard2.0
+  - ps: >-
+    dotnet build Source\ChangeTracking\ChangeTracking.csproj --framework netstandard2.0
 test_script:
 - ps: >-
     dotnet test Source\ChangeTracking.Tests\ChangeTracking.Tests.csproj
+for:
+-
+  matrix:
+    only:
+      - image: Ubuntu
+  build_script:
+  - ps: >-
+    dotnet test Source\ChangeTracking.Tests\ChangeTracking.Tests.csproj --framework netcoreapp2.0
