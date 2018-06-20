@@ -126,7 +126,7 @@ namespace ChangeTracking.Tests
         }
 
         [Fact]
-        public void When_Status_Added_And_Change_Value_Status_Should_Stil_Be_Added()
+        public void When_Status_Added_And_Change_Value_Status_Should_Still_Be_Added()
         {
             var order = Helper.GetOrder();
 
@@ -315,7 +315,7 @@ namespace ChangeTracking.Tests
         }
 
         [Fact]
-        public void AsTrackable_When_ComplexProperty_Children_Trackable_AcceptChanes_Should_Accept_On_Childern()
+        public void AsTrackable_When_ComplexProperty_Children_Trackable_AcceptChanges_Should_Accept_On_Children()
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
@@ -405,7 +405,7 @@ namespace ChangeTracking.Tests
         }
 
         [Fact]
-        public void AsTrackable_When_CollectionProperty_Children_Trackable_AcceptChanes_Should_Accept_On_Childern()
+        public void AsTrackable_When_CollectionProperty_Children_Trackable_AcceptChanges_Should_Accept_On_Children()
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
@@ -607,7 +607,7 @@ namespace ChangeTracking.Tests
         }
 
         [Fact]
-        public void When_ComplexProperty_Children_Trackable_Set_CoomplexProperty_And_Change_Property_Should_Raise_StatusChanged_Event()
+        public void When_ComplexProperty_Children_Trackable_Set_ComplexProperty_And_Change_Property_Should_Raise_StatusChanged_Event()
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
