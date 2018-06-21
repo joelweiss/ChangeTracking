@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
@@ -8,14 +8,18 @@
     <Authors>Joel Weiss</Authors>
     <Company />
     <Product>Change Tracking</Product>
-    <Description>Track changes in your POCO objects, and in your collections.
+    <Description>
+      Track changes in your POCO objects, and in your collections.
 
-By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation.</Description>
+      By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation.
+    </Description>
     <PackageLicenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md&lt;/licenseUrl</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/joelweiss/ChangeTracking</PackageProjectUrl>
     <RepositoryUrl>https://github.com/joelweiss/ChangeTracking</RepositoryUrl>
     <PackageTags>ChangeTracking DynamicProxy Change Tracking POCO</PackageTags>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +34,10 @@ By using Castle Dynamic Proxy to create proxies of your classes at runtime, you 
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
     <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-62925-02" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
