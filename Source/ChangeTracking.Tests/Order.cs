@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace ChangeTracking.Tests
 {
@@ -14,15 +11,9 @@ namespace ChangeTracking.Tests
 
         public virtual int Id { get; set; }
         public virtual string CustomerNumber { get; set; }
-        public virtual Address  Address { get; set; }
+        public virtual Address Address { get; set; }
         public virtual IList<OrderDetail> OrderDetails { get; set; }
-        public virtual int OrderDetailsCount
-        {
-            get
-            {
-                return OrderDetails!=null ? OrderDetails.Count : 0;
-            }
-        }
+        public virtual int OrderDetailsCount => OrderDetails != null ? OrderDetails.Count : 0;
 
         public Order CreateOrder()
         {

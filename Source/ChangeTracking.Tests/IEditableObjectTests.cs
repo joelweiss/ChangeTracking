@@ -1,17 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentAssertions;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class IEditableObjectTests
     {
-        [TestMethod]
+        [Fact]
         public void AsTrackable_Should_Make_Object_Implement_IEditableObject()
         {
             var order = Helper.GetOrder();
@@ -21,7 +15,7 @@ namespace ChangeTracking.Tests
             trackable.Should().BeAssignableTo<System.ComponentModel.IEditableObject>();
         }
 
-        [TestMethod]
+        [Fact]
         public void CancelEdit_On_Item_Should_Revert_Changes()
         {
             var order = Helper.GetOrder();
@@ -36,7 +30,7 @@ namespace ChangeTracking.Tests
             trackable.CustomerNumber.Should().Be("Test", because: "item was canceled");
         }
 
-        [TestMethod]
+        [Fact]
         public void CancelEdit_On_Item_After_EndEdit_Should_Not_Revert_Changes()
         {
             var order = Helper.GetOrder();
@@ -52,7 +46,7 @@ namespace ChangeTracking.Tests
             trackable.CustomerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
         }
 
-        [TestMethod]
+        [Fact]
         public void With_Out_BeginEdit_CancelEdit_Should_Do_Nothing()
         {
             var order = Helper.GetOrder();
@@ -66,7 +60,7 @@ namespace ChangeTracking.Tests
             trackable.CustomerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
         }
         
-        [TestMethod]
+        [Fact]
         public void AsTrackable_Should_Make_Object_Complex_Property_Implement_IEditableObject()
         {
             var order = Helper.GetOrder();
@@ -76,7 +70,7 @@ namespace ChangeTracking.Tests
             trackable.Address.Should().BeAssignableTo<System.ComponentModel.IEditableObject>();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_Should_Not_Make_Object_Complex_Property_Implement_IEditableObject_If_Passed_False()
         {
             var order = Helper.GetOrder();
@@ -86,7 +80,7 @@ namespace ChangeTracking.Tests
             (trackable.Address as System.ComponentModel.IEditableObject).Should().BeNull();
         }
 
-        [TestMethod]
+        [Fact]
         public void CancelEdit_On_Item_Should_Revert_Changes_On_Complex_Property()
         {
             var order = Helper.GetOrder();

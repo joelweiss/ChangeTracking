@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
@@ -111,10 +110,7 @@ namespace ChangeTracking
                 {
                     _Properties[oldValue.Key].SetValue(proxy, oldValue.Value, null);
                 }
-                if (_NotifyParentItemCanceled != null)
-                {
-                    _NotifyParentItemCanceled((T)proxy);
-                }
+                _NotifyParentItemCanceled?.Invoke((T)proxy);
             }
         }
 
