@@ -97,6 +97,9 @@ namespace ChangeTracking
                 case nameof(IChangeTrackable<object>.GetOriginal):
                     invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
                     break;
+                case nameof(IChangeTrackable<object>.GetCurrent):
+                    invocation.ReturnValue = GetCurrent((T)invocation.Proxy);
+                    break;
                 case "add_StatusChanged":
                     _StatusChanged += (EventHandler)invocation.Arguments[0];
                     break;
@@ -200,6 +203,34 @@ namespace ChangeTracking
                 property.SetValue(original, originalValue, null);
             }
             return original;
+        }
+
+        private T GetCurrent(T proxy)
+        {
+            var current = Activator.CreateInstance<T>();
+            foreach (var property in _Properties.Values)
+            {
+                object currentValue = property.GetValue(proxy, null);
+                if (currentValue != null)
+                {
+                    if (currentValue is IChangeTrackableInternal trackable)
+                    {
+                        currentValue = trackable.GetCurrent();
+                    }
+                    else if (currentValue.GetType().GetInterface("IChangeTrackableCollection`1") != null)
+                    {
+                        IEnumerable<object> originalValues = ((System.Collections.IEnumerable)currentValue).Cast<IChangeTrackableInternal>().Select(v => v.GetCurrent());
+                        var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments().First()));
+                        foreach (var item in originalValues)
+                        {
+                            list.Add(item);
+                        }
+                        currentValue = list;
+                    }
+                }
+                property.SetValue(current, currentValue, null);
+            }
+            return current;
         }
 
         private bool Delete(object proxy)
