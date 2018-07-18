@@ -36,11 +36,18 @@ namespace ChangeTracking
         object GetOriginalValue(string propertyName);
 
         /// <summary>
-        /// Gets the original.
+        /// Gets the original object as a poco without the current changes.
         /// </summary>
         /// <returns></returns>
         /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>
         T GetOriginal();
+
+        /// <summary>
+        /// Gets the current object as a poco with the current changes.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>
+        T GetCurrent();
     }
 
     public interface IChangeTrackable : INotifyPropertyChanged, IChangeTracking, IRevertibleChangeTracking, IEditableObject
@@ -53,5 +60,6 @@ namespace ChangeTracking
     internal interface IChangeTrackableInternal
     {
         object GetOriginal();
+        object GetCurrent();
     }
 }
