@@ -1,6 +1,7 @@
 ﻿using Castle.DynamicProxy;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -12,17 +13,23 @@ namespace ChangeTracking
     public static class Core
     {
         private static ProxyGenerator _ProxyGenerator;
-        private static ProxyGenerationOptions _Options;
+        private static IInterceptorSelector _Selector;
+        private static ConcurrentDictionary<Type, ProxyGenerationOptions> _Options;
 
         static Core()
         {
             _ProxyGenerator = new ProxyGenerator();
-            _Options = new ProxyGenerationOptions
-            {
-                Hook = new ChangeTrackingProxyGenerationHook(),
-                Selector = new ChangeTrackingInterceptorSelector()
-            };
+            _Selector = new ChangeTrackingInterceptorSelector();
+            _Options = new ConcurrentDictionary<Type, ProxyGenerationOptions>();
         }
+
+        private static ProxyGenerationOptions CreateOptions(Type type) =>  new ProxyGenerationOptions
+        {
+            Hook = new ChangeTrackingProxyGenerationHook(type),
+            Selector = _Selector
+        };
+
+        private static ProxyGenerationOptions GetOptions(Type type) => _Options.GetOrAdd(type, CreateOptions);
 
         internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
         {
@@ -30,7 +37,7 @@ namespace ChangeTracking
             return _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<>).MakeGenericType(genericArgument),
                         new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(INotifyCollectionChanged) },
                         target,
-                        _Options,
+                        GetOptions(type),
                         (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
         }
 
@@ -44,7 +51,7 @@ namespace ChangeTracking
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(type,
                          new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
                          target,
-                         _Options,
+                         GetOptions(type),
                          (IInterceptor)notifyPropertyChangedInterceptor,
                          (IInterceptor)changeTrackingInterceptor,
                          (IInterceptor)editableObjectInterceptor,
@@ -84,7 +91,7 @@ namespace ChangeTracking
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
                 new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
                 target,
-                _Options,
+                GetOptions(typeof(T)),
                 notifyPropertyChangedInterceptor,
                 changeTrackingInterceptor,
                 editableObjectInterceptor,
@@ -145,7 +152,7 @@ namespace ChangeTracking
                 throw new InvalidOperationException("some items in the collection are already being tracked");
             }
             object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<T>),
-                new[] { typeof(IChangeTrackableCollection<T>), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, _Options, new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+                new[] { typeof(IChangeTrackableCollection<T>), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, GetOptions(typeof(T)), new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
             return (IList<T>)proxy;
         }
     }
