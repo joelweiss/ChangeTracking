@@ -1,9 +1,8 @@
 ﻿using Castle.DynamicProxy;
-using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
@@ -17,6 +16,7 @@ namespace ChangeTracking
         private static HashSet<string> _ImplementedMethods;
         private static HashSet<string> _BindingListImplementedMethods;
         private static HashSet<string> _IBindingListImplementedMethods;
+        private static HashSet<string> _INotifyCollectionChangedImplementedMethods;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
         private bool _reverting;
@@ -29,6 +29,7 @@ namespace ChangeTracking
             _ImplementedMethods = new HashSet<string>(typeof(ChangeTrackingCollectionInterceptor<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
             _BindingListImplementedMethods = new HashSet<string>(typeof(ChangeTrackingBindingList<T>).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy).Select(m => m.Name));
             _IBindingListImplementedMethods = new HashSet<string>(typeof(ChangeTrackingBindingList<T>).GetInterfaceMap(typeof(System.ComponentModel.IBindingList)).TargetMethods.Where(mi => mi.IsPrivate).Select(mi => mi.Name.Substring(mi.Name.LastIndexOf('.') + 1)));
+            _INotifyCollectionChangedImplementedMethods = new HashSet<string>(typeof(INotifyCollectionChanged).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
         }
 
         internal ChangeTrackingCollectionInterceptor(IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
@@ -63,6 +64,11 @@ namespace ChangeTracking
                 return;
             }
             if (_IBindingListImplementedMethods.Contains(invocation.Method.Name))
+            {
+                invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                return;
+            }
+            if (_INotifyCollectionChangedImplementedMethods.Contains(invocation.Method.Name))
             {
                 invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
                 return;
@@ -238,8 +244,7 @@ namespace ChangeTracking
                     item.AcceptChanges();
                 }
 
-                var editable = item as System.ComponentModel.IEditableObject;
-                if (editable != null)
+                if (item is System.ComponentModel.IEditableObject editable)
                 {
                     editable.EndEdit();
                 }
@@ -291,15 +296,9 @@ namespace ChangeTracking
 
         public bool IsChanged => _ChangedItems.Count != 0 || _AddedItems.Count != 0 || _DeletedItems.Count != 0;
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return _WrappedTarget.GetEnumerator();
-        }
+        public IEnumerator<T> GetEnumerator() => _WrappedTarget.GetEnumerator();
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
         internal class IndexedItem<TT>
         {

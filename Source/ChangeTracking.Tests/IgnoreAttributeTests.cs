@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class IgnoreAttributeTests
     {
-        [TestMethod]
+        [Fact]
         public void CanIgnoreChanges()
         {
             // Arrange
@@ -19,14 +18,14 @@ namespace ChangeTracking.Tests
 
             // Assert
             var bChanges = bTrackable.CastToIChangeTrackable();
-            Assert.IsFalse(bChanges.IsChanged);
+            Assert.False(bChanges.IsChanged);
 
-            Assert.AreEqual("duck street", bTrackable.Address);
+            Assert.Equal("duck street", bTrackable.Address);
             var orig = bChanges.GetOriginal();
-            Assert.AreEqual("duck street", orig.Address);
+            Assert.Equal("duck street", orig.Address);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanIgnoreChangesOfComplexProperty()
         {
             // Arrange
@@ -38,21 +37,21 @@ namespace ChangeTracking.Tests
 
             // Assert
             var bChanges = bTrackable.CastToIChangeTrackable();
-            Assert.IsFalse(bChanges.IsChanged);
+            Assert.False(bChanges.IsChanged);
 
             var a = bTrackable.Address;
-            Assert.IsNotNull(a);
-            Assert.AreEqual("duck street", a.Street);
-            Assert.AreEqual(999, a.ZipCode);
+            Assert.NotNull(a);
+            Assert.Equal("duck street", a.Street);
+            Assert.Equal(999, a.ZipCode);
 
             var orig = bChanges.GetOriginal();
             a = orig.Address;
-            Assert.IsNotNull(a);
-            Assert.AreEqual("duck street", a.Street);
-            Assert.AreEqual(999, a.ZipCode);
+            Assert.NotNull(a);
+            Assert.Equal("duck street", a.Street);
+            Assert.Equal(999, a.ZipCode);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanIgnoreChangesOfCollectionProperty()
         {
             // Arrange
@@ -64,19 +63,19 @@ namespace ChangeTracking.Tests
 
             // Assert
             var bChanges = bTrackable.CastToIChangeTrackable();
-            Assert.IsFalse(bChanges.IsChanged);
+            Assert.False(bChanges.IsChanged);
             var bOrig = bChanges.GetOriginal();
 
             var floor = bTrackable.Floors[0];
-            Assert.IsNotNull(floor);
-            Assert.AreEqual("first floor", floor.Name);
+            Assert.NotNull(floor);
+            Assert.Equal("first floor", floor.Name);
 
             floor = bOrig.Floors[0];
-            Assert.IsNotNull(floor);
-            Assert.AreEqual("first floor", floor.Name);
+            Assert.NotNull(floor);
+            Assert.Equal("first floor", floor.Name);
         }
 
-        [TestMethod]
+        [Fact]
         public void WhenPropertiesAreNonVirtual_ButIgnored_DoesNotThrow()
         {
             // Arrange
@@ -96,9 +95,9 @@ namespace ChangeTracking.Tests
             }
 
             // Assert
-            Assert.IsNull(exception);
+            Assert.Null(exception);
             var trackable = proxy.CastToIChangeTrackable();
-            Assert.IsTrue(trackable.IsChanged);
+            Assert.True(trackable.IsChanged);
         }
 
         public class Building

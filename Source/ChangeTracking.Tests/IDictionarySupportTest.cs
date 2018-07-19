@@ -3,11 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class IDictionarySupportTest
     {
         public class Building : IDictionary<string, object>
@@ -104,7 +103,7 @@ namespace ChangeTracking.Tests
             #endregion IDictionary
         }
 
-        [TestMethod]
+        [Fact]
         public void CanTrackChanges()
         {
             // Arrange
@@ -117,10 +116,10 @@ namespace ChangeTracking.Tests
 
             // Assert
             var bChanges = bTrackable.CastToIChangeTrackable();
-            Assert.IsTrue(bChanges.IsChanged);
+            Assert.True(bChanges.IsChanged);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanAcceptChanges()
         {
             // Arrange
@@ -131,7 +130,7 @@ namespace ChangeTracking.Tests
 
             bTrackable["hello"] = "world";
             bTrackable.Name = "name 02";
-            Assert.IsTrue(bTrackable.ContainsKey("hello"));
+            Assert.True(bTrackable.ContainsKey("hello"));
             var bChanges = bTrackable.CastToIChangeTrackable();
             
             // Act
@@ -139,10 +138,10 @@ namespace ChangeTracking.Tests
 
             // Assert
             var orig = bChanges.GetOriginal();
-            Assert.AreEqual(b["hello"], orig["hello"]);
+            Assert.Equal(b["hello"], orig["hello"]);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanRejectChanges()
         {
             // Arrange
@@ -158,7 +157,7 @@ namespace ChangeTracking.Tests
 
             // Assert
             var orig = bChanges.GetOriginal();
-            Assert.AreEqual("sun", orig["hello"]);
+            Assert.Equal("sun", orig["hello"]);
         }
     }
 }

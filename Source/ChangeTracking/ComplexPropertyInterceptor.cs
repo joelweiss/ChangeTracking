@@ -14,10 +14,10 @@ namespace ChangeTracking
         private readonly Dictionary<string, object> _Trackables;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
-        private bool _AreAllPropertesTrackable;
+        private bool _AreAllPropertiesTrackable;
 
-        private const string GET = "get_";
-        private const string SET = "set_";
+        private static readonly string GET = "get_";
+        private static readonly string SET = "set_";
 
         public bool IsInitialized { get; set; }
 
@@ -80,11 +80,11 @@ namespace ChangeTracking
 
                     object childTarget = invocation.Arguments[0];
                     object newValue;
-                    if (invocation.Arguments[0] == null)
+                    if (childTarget == null)
                     {
                         newValue = null;
                     }
-                    if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackable<>)) != null)
+                    else if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackable<>)) != null)
                     {
                         newValue = invocation.Arguments[0];
                     }
@@ -139,8 +139,7 @@ namespace ChangeTracking
                 invocation.ReturnValue = ComplexPropertyTrackables(invocation.Proxy);
                 return;
             }
-            Action<IInvocation, Dictionary<string, object>, bool, bool> action;
-            if (_MakeComplexPropertiesTrackable && _Actions.TryGetValue(invocation.Method.Name, out action))
+            if (_MakeComplexPropertiesTrackable && _Actions.TryGetValue(invocation.Method.Name, out Action<IInvocation, Dictionary<string, object>, bool, bool> action))
             {
                 action(invocation, _Trackables, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
@@ -156,7 +155,7 @@ namespace ChangeTracking
             {
                 return Enumerable.Empty<object>();
             }
-            if (!_AreAllPropertesTrackable)
+            if (!_AreAllPropertiesTrackable)
             {
                 MakeAllPropertiesTrackable(proxy);
             }
@@ -170,7 +169,7 @@ namespace ChangeTracking
             {
                 property.GetValue(proxy, null);
             }
-            _AreAllPropertesTrackable = true;
+            _AreAllPropertiesTrackable = true;
         }
     }
 }

@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class InterfaceListsTest
     {
         public class Building
@@ -36,7 +33,7 @@ namespace ChangeTracking.Tests
             public virtual bool IsLocked { get; set; }
         }
 
-        [TestMethod]
+        [Fact]
         public void CanHandleInterfaceLists()
         {
             // Arrange
@@ -55,16 +52,16 @@ namespace ChangeTracking.Tests
             }
 
             // Assert
-            Assert.IsNull(exception, "collections of interfaces are not supported?");
+            Assert.Null(exception); // "collections of interfaces are not supported?"
 
             var bChanges = bTrackable.CastToIChangeTrackable();
-            Assert.IsTrue(bChanges.IsChanged);
+            Assert.True(bChanges.IsChanged);
 
-            Assert.IsTrue(bTrackable.Floors[0] is IFloor);
-            Assert.IsTrue(bTrackable.Floors[0] is Floor);
+            Assert.True(bTrackable.Floors[0] is IFloor);
+            Assert.True(bTrackable.Floors[0] is Floor);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanHandleInterfaceLists_Nested()
         {
             // Arrange
@@ -88,12 +85,12 @@ namespace ChangeTracking.Tests
             var t = b.AsTrackable();
             
             // Assert
-            Assert.IsTrue(t is IChangeTrackable);
-            Assert.IsTrue(t.Floors[0] is IChangeTrackable);
-            Assert.IsTrue(t.Floors[0].Doors[0] is IChangeTrackable);
+            Assert.True(t is IChangeTrackable);
+            Assert.True(t.Floors[0] is IChangeTrackable);
+            Assert.True(t.Floors[0].Doors[0] is IChangeTrackable);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanHandleInterfaceLists_WhenAddingProxy()
         {
             // Arrange
@@ -114,7 +111,7 @@ namespace ChangeTracking.Tests
             // Assert
         }
 
-        [TestMethod]
+        [Fact]
         public void CanGetCurrentModel_Unproxied_WithoutHavingToAcceptChanges()
         {
             // Arrange
@@ -141,11 +138,11 @@ namespace ChangeTracking.Tests
             var b2 = bTrackable.CastToIChangeTrackable().GetCurrent();
 
             // Assert
-            Assert.IsFalse(bTrackable.Floors[0].Doors[0].IsLocked);
-            Assert.AreEqual(bTrackable.Floors[0].Doors[0].IsLocked, b2.Floors[0].Doors[0].IsLocked);
+            Assert.False(bTrackable.Floors[0].Doors[0].IsLocked);
+            Assert.Equal(bTrackable.Floors[0].Doors[0].IsLocked, b2.Floors[0].Doors[0].IsLocked);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanGetCurrentModel_Unproxied_WithoutHavingToAcceptChanges_WhenEditingChildCollection()
         {
             // Arrange
@@ -185,17 +182,17 @@ namespace ChangeTracking.Tests
             var b2 = bTrackable.CastToIChangeTrackable().GetCurrent();
 
             // Assert
-            Assert.AreEqual(2, b2.Floors.Count);
+            Assert.Equal(2, b2.Floors.Count);
 
             var f1 = b2.Floors[0];
-            Assert.AreEqual("1A",f1.Doors[0].Name);
-            Assert.IsFalse(f1.Doors[0].IsLocked);
-            Assert.AreEqual(1, f1.Doors.Count);
+            Assert.Equal("1A",f1.Doors[0].Name);
+            Assert.False(f1.Doors[0].IsLocked);
+            Assert.Equal(1, f1.Doors.Count);
 
             var f2 = b2.Floors[1];
-            Assert.AreEqual("2A", f2.Doors[0].Name);
-            Assert.IsTrue(f2.Doors[0].IsLocked);
-            Assert.AreEqual(1, f2.Doors.Count);
+            Assert.Equal("2A", f2.Doors[0].Name);
+            Assert.True(f2.Doors[0].IsLocked);
+            Assert.Equal(1, f2.Doors.Count);
         }
     }
 }

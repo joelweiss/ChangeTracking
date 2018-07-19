@@ -1,16 +1,22 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class SpeedTest
     {
-        public TestContext TestContext { get; set; }
+        private readonly ITestOutputHelper _Output;
 
-        [TestMethod]
+        public SpeedTest(ITestOutputHelper output)
+        {
+            _Output = output;
+        }
+
+        [Fact]
         public void TestSpeed()
         {
             int reps = 100000;
@@ -35,7 +41,7 @@ namespace ChangeTracking.Tests
                 trackedList[i] = trackedList[i].AsTrackable();
             }
             swAsTrackable.Stop();
-            TestContext.WriteLine("Call AsTrackable on {0:N0} objects: {1} ms", reps, swAsTrackable.ElapsedMilliseconds);
+            _Output.WriteLine("Call AsTrackable on {0:N0} objects: {1} ms", reps, swAsTrackable.ElapsedMilliseconds);
 
             var noneTrackedList = lists[1];
             var swNotTracked = new Stopwatch();
@@ -50,7 +56,7 @@ namespace ChangeTracking.Tests
                 var cust = order.CustomerNumber;
             }
             swNotTracked.Stop();
-            TestContext.WriteLine("Write and Read {0:N0} none tracked objects: {1} ms", reps, swNotTracked.ElapsedMilliseconds);
+            _Output.WriteLine("Write and Read {0:N0} none tracked objects: {1} ms", reps, swNotTracked.ElapsedMilliseconds);
             GC.Collect();
             var swTracked = new Stopwatch();
             swTracked.Start();
@@ -63,7 +69,7 @@ namespace ChangeTracking.Tests
                 var cust = order.CustomerNumber;
             }
             swTracked.Stop();
-            TestContext.WriteLine("Write and Read {0:N0} tracked objects: {1} ms", reps, swTracked.ElapsedMilliseconds);
+            _Output.WriteLine("Write and Read {0:N0} tracked objects: {1} ms", reps, swTracked.ElapsedMilliseconds);
 
             GC.Collect();
             var swGetOriginal = new Stopwatch();
@@ -73,10 +79,10 @@ namespace ChangeTracking.Tests
                 var original = ((IChangeTrackableInternal)trackedList[i]).GetOriginal();
             }
             swGetOriginal.Stop();
-            TestContext.WriteLine("Call GetOriginal on {0:N0} tracked objects: {1} ms", reps, swGetOriginal.ElapsedMilliseconds);
+            _Output.WriteLine("Call GetOriginal on {0:N0} tracked objects: {1} ms", reps, swGetOriginal.ElapsedMilliseconds);
 
             var timeNeeded = swAsTrackable.ElapsedMilliseconds + swNotTracked.ElapsedMilliseconds + swTracked.ElapsedMilliseconds + swGetOriginal.ElapsedMilliseconds;
-            TestContext.WriteLine("Finished for {0:N0} tracked objects in {1} ms", reps, timeNeeded);
+            _Output.WriteLine("Finished for {0:N0} tracked objects in {1} ms", reps, timeNeeded);
         }
     }
 }

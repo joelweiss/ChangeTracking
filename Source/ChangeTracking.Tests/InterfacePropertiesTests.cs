@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class InterfacePropertiesTest
     {
         public class Building
@@ -37,7 +32,7 @@ namespace ChangeTracking.Tests
             public virtual int Code { get; set; }
         }
 
-        [TestMethod]
+        [Fact]
         public void CanDetectChangesOfInterfaceProperty()
         {
             // Arrange
@@ -52,10 +47,10 @@ namespace ChangeTracking.Tests
 
             // Assert
             var bChanges = bTrackable.CastToIChangeTrackable();
-            Assert.IsTrue(bChanges.IsChanged);
+            Assert.True(bChanges.IsChanged);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanDetectChangesOfInterfaceProperty_InDeepHierarchy()
         {
             // Arrange
@@ -76,13 +71,13 @@ namespace ChangeTracking.Tests
             }
 
             // Assert
-            Assert.IsNull(exception, "interface properties are not supported?");
+            Assert.Null(exception); // "interface properties are not supported?"
             var bChanges = bTrackable.CastToIChangeTrackable();
             var aChanges = bTrackable.Address.CastToIChangeTrackable();
             var zChanges = bTrackable.Address.ZipCode.CastToIChangeTrackable();
-            Assert.IsTrue(bChanges.IsChanged);
-            Assert.IsTrue(aChanges.IsChanged);
-            Assert.IsTrue(zChanges.IsChanged);
+            Assert.True(bChanges.IsChanged);
+            Assert.True(aChanges.IsChanged);
+            Assert.True(zChanges.IsChanged);
         }
     }
 }

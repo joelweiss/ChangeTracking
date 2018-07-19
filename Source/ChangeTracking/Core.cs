@@ -1,12 +1,11 @@
 ﻿using Castle.DynamicProxy;
 using System;
-using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
@@ -29,10 +28,10 @@ namespace ChangeTracking
         {
             Type genericArgument = type.GetGenericArguments().First();
             return _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<>).MakeGenericType(genericArgument),
-                new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList) },
-                target,
-                _Options,
-                (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+                        new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(INotifyCollectionChanged) },
+                        target,
+                        _Options,
+                        CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
         }
 
         internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
@@ -53,18 +52,20 @@ namespace ChangeTracking
 
             var interfaces = target.GetType().GetInterfaces();
             var changeTrackables = interfaces.Select(itf => typeof(IChangeTrackable<>).MakeGenericType(itf)).ToList();
+
             var cT = typeof(IChangeTrackable<>).MakeGenericType(type);
-            if (!changeTrackables.Contains(cT))
+            if (changeTrackables.Contains(cT) == false)
                 changeTrackables.Add(cT);
+
             var cT2 = typeof(IChangeTrackable<>).MakeGenericType(targetType);
-            if (!changeTrackables.Contains(cT2))
+            if (changeTrackables.Contains(cT2) == false)
                 changeTrackables.Add(cT2);
 
             var interfaceTypes = new[]
             {
                 typeof(IChangeTrackableInternal), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable),
                 typeof(ICollectionPropertyTrackable), typeof(IEditableObject),
-                typeof(System.ComponentModel.INotifyPropertyChanged)
+                typeof(INotifyPropertyChanged)
             }.Union(interfaces).Concat(changeTrackables).ToArray();
 
             if (type.IsInterface && targetType.IsInterface)
@@ -73,11 +74,11 @@ namespace ChangeTracking
                     interfaceTypes,
                     target,
                     _Options,
-                    (IInterceptor)notifyPropertyChangedInterceptor,
-                    (IInterceptor)changeTrackingInterceptor,
-                    (IInterceptor)editableObjectInterceptor,
-                    (IInterceptor)complexPropertyInterceptor,
-                    (IInterceptor)collectionPropertyInterceptor);
+                    notifyPropertyChangedInterceptor,
+                    changeTrackingInterceptor,
+                    editableObjectInterceptor,
+                    complexPropertyInterceptor,
+                    collectionPropertyInterceptor);
             }
             else
             {
@@ -85,11 +86,11 @@ namespace ChangeTracking
                     interfaceTypes,
                     target,
                     _Options,
-                    (IInterceptor)notifyPropertyChangedInterceptor,
-                    (IInterceptor)changeTrackingInterceptor,
-                    (IInterceptor)editableObjectInterceptor,
-                    (IInterceptor)complexPropertyInterceptor,
-                    (IInterceptor)collectionPropertyInterceptor);
+                    notifyPropertyChangedInterceptor,
+                    changeTrackingInterceptor,
+                    editableObjectInterceptor,
+                    complexPropertyInterceptor,
+                    collectionPropertyInterceptor);
             }
             ((IInterceptorSettings)notifyPropertyChangedInterceptor).IsInitialized = true;
             ((IInterceptorSettings)changeTrackingInterceptor).IsInitialized = true;
@@ -118,27 +119,49 @@ namespace ChangeTracking
             }
             
             var type = target.GetType();
-            var changeTrackingInterceptor = CreateInstance(typeof(ChangeTrackingInterceptor<>).MakeGenericType(type), status);
-            var notifyPropertyChangedInterceptor = CreateInstance(typeof(NotifyPropertyChangedInterceptor<>).MakeGenericType(type), changeTrackingInterceptor);
-            var editableObjectInterceptor = CreateInstance(typeof(EditableObjectInterceptor<>).MakeGenericType(type), notifyParentListItemCanceled);
-            var complexPropertyInterceptor = CreateInstance(typeof(ComplexPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-            var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+
+            IInterceptor changeTrackingInterceptor;
+            IInterceptor notifyPropertyChangedInterceptor;
+            IInterceptor editableObjectInterceptor;
+            IInterceptor complexPropertyInterceptor;
+            IInterceptor collectionPropertyInterceptor;
+
+            if(typeof(T).IsInterface)
+            {
+                // Note: For a better performance just create the type with reflection when needed.
+                changeTrackingInterceptor = CreateInstance(typeof(ChangeTrackingInterceptor<>).MakeGenericType(type), status);
+                notifyPropertyChangedInterceptor = CreateInstance(typeof(NotifyPropertyChangedInterceptor<>).MakeGenericType(type), changeTrackingInterceptor);
+                editableObjectInterceptor = CreateInstance(typeof(EditableObjectInterceptor<>).MakeGenericType(type), notifyParentListItemCanceled);
+                complexPropertyInterceptor = CreateInstance(typeof(ComplexPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+                collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+            }
+            else
+            {
+                changeTrackingInterceptor = new ChangeTrackingInterceptor<T>(status);
+                notifyPropertyChangedInterceptor = new NotifyPropertyChangedInterceptor<T>((ChangeTrackingInterceptor<T>) changeTrackingInterceptor);
+                editableObjectInterceptor = new EditableObjectInterceptor<T>(notifyParentListItemCanceled);
+                complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+                collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+            }
+
             object proxy;
 
             var interfaces = target.GetType().GetInterfaces();
             var changeTrackables = interfaces.Select(itf => typeof(IChangeTrackable<>).MakeGenericType(itf)).ToList();
+
             var cT = typeof(IChangeTrackable<T>);
-            if(!changeTrackables.Contains(cT))
+            if(changeTrackables.Contains(cT) == false)
                 changeTrackables.Add(cT);
+
             var cT2 = typeof(IChangeTrackable<>).MakeGenericType(type);
-            if (!changeTrackables.Contains(cT2))
+            if (changeTrackables.Contains(cT2) == false)
                 changeTrackables.Add(cT2);
 
             var interfaceTypes = new[]
             {
                 typeof(IChangeTrackableInternal), typeof(IChangeTrackingManager),
                 typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable),
-                typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged),
+                typeof(IEditableObject), typeof(INotifyPropertyChanged),
                 typeof(T)
             }.Union(interfaces).Concat(changeTrackables).ToArray();
 
@@ -223,7 +246,7 @@ namespace ChangeTracking
                 throw new InvalidOperationException("some items in the collection are already being tracked");
             }
             object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<T>),
-                new[] { typeof(IChangeTrackableCollection<T>), typeof(IBindingList), typeof(ICancelAddNew) }, target, _Options, new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+                new[] { typeof(IChangeTrackableCollection<T>), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, _Options, new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
             return (IList<T>)proxy;
         }
     }

@@ -1,28 +1,12 @@
 ﻿using Castle.DynamicProxy;
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
-    public class StatusChangedEventArgs : EventArgs
-    {
-        public object Proxy { get; }
-        public ChangeStatus OldStatus { get; }
-        public ChangeStatus NewStatus { get; }
-
-        public StatusChangedEventArgs(object proxy, ChangeStatus oldStatus, ChangeStatus newStatus)
-        {
-            Proxy = proxy;
-            OldStatus = oldStatus;
-            NewStatus = newStatus;
-        }
-    }
-
     internal sealed class ChangeTrackingInterceptor<T> : IInterceptor, IInterceptorSettings where T : class
     {
         private Dictionary<string, object> _OriginalValueDictionary;
@@ -95,13 +79,17 @@ namespace ChangeTracking
             }
             else if (invocation.Method.IsGetter() && !_IgnoredProperties.Contains(propertyName))
             {
-                if (propertyName == "ChangeTrackingStatus")
+                if (propertyName == nameof(IChangeTrackable.ChangeTrackingStatus))
                 {
                     invocation.ReturnValue = _ChangeTrackingStatus;
                 }
-                else if (propertyName == "IsChanged")
+                else if (propertyName == nameof(System.ComponentModel.IChangeTracking.IsChanged))
                 {
                     invocation.ReturnValue = _ChangeTrackingStatus != ChangeStatus.Unchanged;
+                }
+                else if (propertyName == nameof(IChangeTrackable.ChangedProperties))
+                {
+                    invocation.ReturnValue = GetChangedProperties();
                 }
                 else
                 {
@@ -110,12 +98,13 @@ namespace ChangeTracking
                 }
                 return;
             }
+
             switch (invocation.Method.Name)
             {
-                case "GetOriginalValue":
+                case nameof(IChangeTrackable<object>.GetOriginalValue):
                     invocation.ReturnValue = ((dynamic)this).GetOriginalValue((T)invocation.Proxy, (dynamic)invocation.Arguments[0]);
                     break;
-                case "GetOriginal":
+                case nameof(IChangeTrackable<object>.GetOriginal):
                     invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
                     break;
                 case "GetCurrent":
@@ -153,8 +142,7 @@ namespace ChangeTracking
 
         private object GetOriginalValue(T target, string propertyName)
         {
-            object value;
-            if (!_OriginalValueDictionary.TryGetValue(propertyName, out value))
+            if (!_OriginalValueDictionary.TryGetValue(propertyName, out object value))
             {
                 try
                 {
@@ -162,7 +150,7 @@ namespace ChangeTracking
                 }
                 catch (KeyNotFoundException ex)
                 {
-                    throw new ArgumentOutOfRangeException(string.Format("\"{0}\" is not a valid property name of type \"{1}\"", propertyName, typeof(T)), ex);
+                    throw new ArgumentOutOfRangeException($"\"{propertyName}\" is not a valid property name of type \"{typeof(T)}\"", ex);
                 }
             }
             return value;
@@ -173,19 +161,10 @@ namespace ChangeTracking
             var propertyInfo = GetPropertyInfo(selector);
 
             string propName = propertyInfo.Name;
-
-            object value;
-            TResult originalValue;
-            if (_OriginalValueDictionary.TryGetValue(propName, out value))
-            {
-                originalValue = (TResult)value;
-            }
-            else
-            {
-                originalValue = selector.Compile()(target);
-            }
-            var trackable = originalValue as IChangeTrackableInternal;
-            if (trackable != null)
+            TResult originalValue = _OriginalValueDictionary.TryGetValue(propName, out object value) ?
+                (TResult)value : 
+                selector.Compile()(target);
+            if (originalValue is IChangeTrackableInternal trackable)
             {
                 originalValue = (TResult)trackable.GetOriginal();
             }
@@ -221,12 +200,10 @@ namespace ChangeTracking
             foreach (var propertyKey in _Properties)
             {
                 var property = propertyKey.Value;
-                object value;
-                object originalValue = _OriginalValueDictionary.TryGetValue(property.Name, out value) ? value : property.GetValue(proxy, null);
+                object originalValue = _OriginalValueDictionary.TryGetValue(property.Name, out object value) ? value : property.GetValue(proxy, null);
                 if (originalValue != null)
                 {
-                    var trackable = originalValue as IChangeTrackableInternal;
-                    if (trackable != null)
+                    if (originalValue is IChangeTrackableInternal trackable)
                     {
                         originalValue = trackable.GetOriginal();
                     }
@@ -241,7 +218,8 @@ namespace ChangeTracking
                         originalValue = list;
                     }
                 }
-                var index = property.Name == propertyKey.Key ? null : new object[]{propertyKey.Key};
+
+                var index = property.Name == propertyKey.Key ? null : new object[] { propertyKey.Key };
                 property.SetValue(original, originalValue, index);
             }
 
@@ -373,18 +351,15 @@ namespace ChangeTracking
         
         private void UnsubscribeFromChildStatusChanged(string propertyName, object oldChild)
         {
-            Delegate handler;
-            if (_StatusChangedEventHandlers.TryGetValue(propertyName, out handler))
+            if (_StatusChangedEventHandlers.TryGetValue(propertyName, out Delegate handler))
             {
-                var trackable = oldChild as IChangeTrackable;
-                if (trackable != null)
+                if (oldChild is IChangeTrackable trackable)
                 {
                     trackable.StatusChanged -= (EventHandler<StatusChangedEventArgs>)handler;
                     _StatusChangedEventHandlers.Remove(propertyName);
                     return;
                 }
-                var collectionTrackable = oldChild as System.ComponentModel.IBindingList;
-                if (collectionTrackable != null)
+                if (oldChild is System.ComponentModel.IBindingList collectionTrackable)
                 {
                     collectionTrackable.ListChanged -= (System.ComponentModel.ListChangedEventHandler)handler;
                     _StatusChangedEventHandlers.Remove(propertyName);
@@ -396,16 +371,14 @@ namespace ChangeTracking
         {
             if (!_StatusChangedEventHandlers.ContainsKey(propertyName))
             {
-                var newChild = newValue as IChangeTrackable;
-                if (newChild != null)
+                if (newValue is IChangeTrackable newChild)
                 {
                     EventHandler<StatusChangedEventArgs> newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
                     newChild.StatusChanged += newHandler;
                     _StatusChangedEventHandlers.Add(propertyName, newHandler);
                     return;
                 }
-                var newCollectionChild = newValue as System.ComponentModel.IBindingList;
-                if (newCollectionChild != null)
+                if (newValue is System.ComponentModel.IBindingList newCollectionChild)
                 {
                     System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
                     newCollectionChild.ListChanged += newHandler;
@@ -428,9 +401,21 @@ namespace ChangeTracking
             }
         }
 
-        private ChangeStatus GetNewChangeStatus(object sender)
+        private ChangeStatus GetNewChangeStatus(object sender) => _OriginalValueDictionary.Count == 0 && GetChildren(sender).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
+
+        private IEnumerable<string> GetChangedProperties()
         {
-            return _OriginalValueDictionary.Count == 0 && GetChildren(sender).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
+            switch (_ChangeTrackingStatus)
+            {
+                case ChangeStatus.Unchanged:
+                    return Enumerable.Empty<string>();
+                case ChangeStatus.Added:
+                case ChangeStatus.Deleted:
+                    return _Properties.Keys;
+                case ChangeStatus.Changed:
+                    return _OriginalValueDictionary.Keys;
+                default: throw null;
+            }
         }
 
         internal static PropertyInfo GetProperty(string propertyName)

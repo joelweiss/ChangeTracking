@@ -1,13 +1,11 @@
-﻿using Castle.DynamicProxy;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
 
 namespace ChangeTracking
 {
-    internal sealed class ChangeTrackingBindingList<T> : BindingList<T> where T : class
+    internal sealed class ChangeTrackingBindingList<T> : BindingList<T>, INotifyCollectionChanged where T : class
     {
         private readonly Action<T> _ItemCanceled;
         private readonly Action<StatusChangedEventArgs> _childStatusChanged;
@@ -16,8 +14,9 @@ namespace ChangeTracking
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
 
-        public ChangeTrackingBindingList(IList<T> list, Func<int, T, T> inseringItem, Action<T, int> deleteItem, Action<T> itemCanceled, Action<StatusChangedEventArgs> childStatusChanged, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
-            : base(list)
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+        public ChangeTrackingBindingList(IList<T> list, Func<int, T, T> inseringItem, Action<T, int> deleteItem, Action<T> itemCanceled, Action<StatusChangedEventArgs> childStatusChanged, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)            : base(list)
         {
             if (inseringItem == null) throw new ArgumentNullException(nameof(inseringItem));
             if (deleteItem == null) throw new ArgumentNullException(nameof(deleteItem));
@@ -63,6 +62,7 @@ namespace ChangeTracking
             trackable.StatusChanged += Trackable_StatusChanged;
             
             base.InsertItem(index, (T) trackable);
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         protected override void SetItem(int index, T item)
@@ -76,8 +76,10 @@ namespace ChangeTracking
             trackable.StatusChanged -= Trackable_StatusChanged;
             trackable.StatusChanged += Trackable_StatusChanged;
 
+            T originalItem = this[index];
             base.SetItem(index, (T)trackable);
             _insertingItem?.Invoke(index, (T)trackable);
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, originalItem, index));
         }
 
         private void Trackable_StatusChanged(object sender, StatusChangedEventArgs e)
@@ -96,6 +98,21 @@ namespace ChangeTracking
             }
 
             base.RemoveItem(index);
+
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+        }
+
+        protected override void OnListChanged(ListChangedEventArgs e)
+        {
+            base.OnListChanged(e);
+            switch (e.ListChangedType)
+            {
+                case ListChangedType.Reset:
+                    CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                    break;
+                default:
+                    return;
+            }
         }
 
         protected override object AddNewCore()

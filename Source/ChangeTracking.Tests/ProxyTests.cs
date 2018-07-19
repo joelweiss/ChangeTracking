@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Collections.Generic;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class ProxyTests
     {
         public interface IFloor
@@ -45,7 +43,7 @@ namespace ChangeTracking.Tests
             public virtual string Name { get; set; }
         }
 
-        [TestMethod]
+        [Fact]
         public void TracksDerivedInterfaces()
         {
             // Arrange
@@ -71,21 +69,19 @@ namespace ChangeTracking.Tests
             var t = b.AsTrackable();
 
             // Assert
-            Assert.IsTrue(t is IChangeTrackable);
-            Assert.IsTrue(t.Floors is IChangeTrackableCollection<IFloor>);
+            Assert.True(t is IChangeTrackable);
+            Assert.True(t.Floors is IChangeTrackableCollection<IFloor>);
             var tf = t.Floors[0] as IFloor;
             var tb = t.Floors[1] as IBasement;
-            Assert.IsTrue(tf is IChangeTrackable);
-            Assert.IsTrue(tb is IChangeTrackable);
-            Assert.IsTrue(tb.Compartments is IChangeTrackableCollection<ICompartment>);
-            Assert.IsTrue(tb.Compartments[0] is IChangeTrackable);
-            Assert.IsTrue(tb.Compartments[1] is IChangeTrackable);
-            Assert.IsTrue(tb.Compartments[2] is IChangeTrackable);
+            Assert.True(tf is IChangeTrackable);
+            Assert.True(tb is IChangeTrackable);
+            Assert.True(tb.Compartments is IChangeTrackableCollection<ICompartment>);
+            Assert.True(tb.Compartments[0] is IChangeTrackable);
+            Assert.True(tb.Compartments[1] is IChangeTrackable);
+            Assert.True(tb.Compartments[2] is IChangeTrackable);
         }
 
-
-
-        [TestMethod]
+        [Fact]
         public void TracksChangesInDerivedInterface()
         {
             // Arrange
@@ -115,12 +111,10 @@ namespace ChangeTracking.Tests
 
             // Assert
             var c = t.CastToIChangeTrackable();
-            Assert.IsTrue(c.IsChanged);
+            Assert.True(c.IsChanged);
         }
 
-
-
-        [TestMethod]
+        [Fact]
         public void TracksChangesInDerivedInterface_CanCastToIChangeTrackable()
         {
             // Arrange
@@ -151,7 +145,7 @@ namespace ChangeTracking.Tests
             basement.Compartments[0].Name = "noodle";
 
             // Assert
-            Assert.IsTrue(tc.IsChanged);
+            Assert.True(tc.IsChanged);
         }
     }
 }

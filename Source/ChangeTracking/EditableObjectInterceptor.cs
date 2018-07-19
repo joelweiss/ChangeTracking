@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
@@ -121,10 +120,7 @@ namespace ChangeTracking
                     var index = property.Name == oldValue.Key ? null : new object[] { oldValue.Key };
                     property.SetValue(proxy, oldValue.Value, index);
                 }
-                if (_NotifyParentItemCanceled != null)
-                {
-                    _NotifyParentItemCanceled((T)proxy);
-                }
+                _NotifyParentItemCanceled?.Invoke((T)proxy);
             }
         }
 
@@ -147,6 +143,7 @@ namespace ChangeTracking
                 .Concat(((IComplexPropertyTrackable)proxy).ComplexPropertyTrackables)
                 .OfType<System.ComponentModel.IEditableObject>();
         }
+
         internal static PropertyInfo GetProperty(string propertyName)
         {
             PropertyInfo property;

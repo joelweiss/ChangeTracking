@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ChangeTracking
 {
@@ -18,7 +17,7 @@ namespace ChangeTracking
 
         public void MethodsInspected() { }
 
-        public void NonProxyableMemberNotification(Type type, System.Reflection.MemberInfo memberInfo)
+        public void NonProxyableMemberNotification(Type type, MemberInfo memberInfo)
         {
             var method = memberInfo as MethodInfo;
             if (method != null && method.IsProperty() && !type.GetProperty(method.PropertyName()).GetCustomAttributes(typeof(ChangeTracking.IgnoreAttribute), true).Any())
@@ -27,19 +26,10 @@ namespace ChangeTracking
             }
         }
 
-        public bool ShouldInterceptMethod(Type type, System.Reflection.MethodInfo methodInfo)
-        {
-            return !_MethodsToSkip.Contains(methodInfo.Name);
-        }
+        public bool ShouldInterceptMethod(Type type, System.Reflection.MethodInfo methodInfo) => !_MethodsToSkip.Contains(methodInfo.Name);
 
-        public override bool Equals(object obj)
-        {
-            return obj as ChangeTrackingProxyGenerationHook != null;
-        }
+        public override bool Equals(object obj) => obj as ChangeTrackingProxyGenerationHook != null;
 
-        public override int GetHashCode()
-        {
-            return 0;
-        }
+        public override int GetHashCode() => 0;
     }
 }

@@ -1,17 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using FluentAssertions;
+using Xunit;
 
 namespace ChangeTracking.Tests
 {
-    [TestClass]
     public class IBindingListTests
     {
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_Should_Make_It_ICancelAddNew()
         {
             var orders = Helper.GetOrdersIList();
@@ -21,7 +16,7 @@ namespace ChangeTracking.Tests
             trackable.Should().BeAssignableTo<System.ComponentModel.ICancelAddNew>();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_Should_Make_It_IBindingList()
         {
             var orders = Helper.GetOrdersIList();
@@ -31,7 +26,7 @@ namespace ChangeTracking.Tests
             trackable.Should().BeAssignableTo<System.ComponentModel.IBindingList>();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_AddNew_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -39,13 +34,13 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
 
-            bindingList.MonitorEvents();
+            EventMonitor monitor = bindingList.MonitorListChanged();
             bindingList.AddNew();
 
-            bindingList.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
-        [TestMethod]
+        [Fact]
         public void AsTrackable_On_Collection_Remove_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -53,13 +48,13 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
 
-            bindingList.MonitorEvents();
+            EventMonitor monitor = bindingList.MonitorListChanged();
             trackable.Remove(trackable[0]);
 
-            bindingList.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
-        [TestMethod]
+        [Fact]
         public void CancelEdit_On_Item_Should_Remove_From_Collection()
         {
             var orders = Helper.GetOrdersIList();
@@ -76,7 +71,7 @@ namespace ChangeTracking.Tests
             bindingList.Count.Should().Be(withAddedCount - 1, because: "item was canceled");
         }
         
-        [TestMethod]
+        [Fact]
         public void Change_Property_On_Item_That_Implements_INotifyPropertyChanged_In_Collection_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -84,13 +79,13 @@ namespace ChangeTracking.Tests
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
 
-            bindingList.MonitorEvents();
+            EventMonitor monitor = bindingList.MonitorListChanged();
             ((Order)bindingList[0]).Id = 123;
 
-            bindingList.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }        
 
-        [TestMethod]
+        [Fact]
         public void AcceptChanges_On_Collection_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -105,25 +100,25 @@ namespace ChangeTracking.Tests
             first.Id = 963;
 
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
             trackable.CastToIChangeTrackableCollection().AcceptChanges();            
 
-            trackable.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
-        [TestMethod]
+        [Fact]
         public void AcceptChanges_On_Collection_If_No_Changes_Should_Not_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
             trackable.CastToIChangeTrackableCollection().AcceptChanges();
 
-            trackable.ShouldNotRaise("ListChanged");
+            monitor.WasRaised.Should().BeFalse();
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_Should_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
@@ -132,24 +127,24 @@ namespace ChangeTracking.Tests
             var first = trackable.First();
             first.Id = 963;
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
 
 
             trackable.CastToIChangeTrackableCollection().RejectChanges();
 
-            trackable.ShouldRaise("ListChanged");
+            monitor.WasRaised.Should().BeTrue();
         }
 
-        [TestMethod]
+        [Fact]
         public void RejectChanges_On_Collection_If_No_Changes_Should_Not_Raise_ListChanged()
         {
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
 
-            trackable.MonitorEvents();
+            EventMonitor monitor = trackable.MonitorListChanged();
             trackable.CastToIChangeTrackableCollection().RejectChanges();
 
-            trackable.ShouldNotRaise("ListChanged");
+            monitor.WasRaised.Should().BeFalse();
         }
     }
 }
