@@ -10,6 +10,7 @@ namespace ChangeTracking
     {
         private static HashSet<string> _MethodsToSkip;
         private readonly Type _Type;
+        //private HashSet<MethodInfo> _InstanceMethodsOnClass;
 
         static ChangeTrackingProxyGenerationHook()
         {
@@ -19,11 +20,14 @@ namespace ChangeTracking
         public ChangeTrackingProxyGenerationHook(Type type)
         {
             _Type = type;
+
+            // Todo: It currently prevents the IDictionary support.
+            // _InstanceMethodsOnClass = new HashSet<MethodInfo>(type
+            //    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            //    .Where(mi => !mi.IsSpecialName));
         }
 
-        public void MethodsInspected()
-        {
-        }
+        public void MethodsInspected() { }
 
         public void NonProxyableMemberNotification(Type type, MemberInfo memberInfo)
         {
@@ -33,7 +37,7 @@ namespace ChangeTracking
             }
         }
 
-        public bool ShouldInterceptMethod(Type type, System.Reflection.MethodInfo methodInfo) => !_MethodsToSkip.Contains(methodInfo.Name);
+        public bool ShouldInterceptMethod(Type type, System.Reflection.MethodInfo methodInfo) => !_MethodsToSkip.Contains(methodInfo.Name) /*&& !_InstanceMethodsOnClass.Contains(methodInfo)*/;
 
         public override bool Equals(object obj) => (obj as ChangeTrackingProxyGenerationHook)?._Type == _Type;
 

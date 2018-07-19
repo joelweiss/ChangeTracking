@@ -174,5 +174,30 @@ namespace ChangeTracking.Tests
 
             trackable.ShouldNotRaisePropertyChangeFor(o => o.Address);
         }
+        
+        [Fact]
+        public void Change_Property_Should_Raise_PropertyChanged_Event_if_non_virtual_method()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            ((INotifyPropertyChanged)trackable).MonitorEvents();
+
+            trackable.NonVirtualModifier();
+
+            trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
+        }
+
+        // Todo: It currently prevents the IDictionary support.
+        //[Fact]
+        public void Change_Property_Should_Raise_PropertyChanged_Event_if_method_virtual()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            ((INotifyPropertyChanged)trackable).MonitorEvents();
+
+            trackable.VirtualModifier();
+
+            trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
+        }
     }
 }

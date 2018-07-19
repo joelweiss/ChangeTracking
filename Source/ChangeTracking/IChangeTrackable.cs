@@ -51,7 +51,7 @@ namespace ChangeTracking
         object GetOriginalValue(string propertyName);
 
         /// <summary>
-        /// Gets the original value of a given property.
+        /// Gets the original object as a poco without the current changes.
         /// </summary>
         /// <typeparam name="TResult">The type of the result.</typeparam>
         /// <param name="propertyName">Name of the property.</param>
