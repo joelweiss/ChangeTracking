@@ -186,9 +186,8 @@ namespace ChangeTracking.Tests
 
             trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
         }
-
-        // Todo: It currently prevents the IDictionary support.
-        //[Fact]
+        
+        [Fact]
         public void Change_Property_Should_Raise_PropertyChanged_Event_if_method_virtual()
         {
             var order = Helper.GetOrder();
@@ -198,6 +197,22 @@ namespace ChangeTracking.Tests
             trackable.VirtualModifier();
 
             trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
+        }
+
+        [Fact]
+        public void GetName_Should_Return_Correct_Value()
+        {
+            // Arrange
+            var order = Helper.GetOrder();
+            order.SetName("MyName");
+
+            var trackable = order.AsTrackable();
+
+            // Act
+            var name = trackable.GetName();
+
+            // Assert
+            Assert.Equal("MyName", name);
         }
     }
 }

@@ -23,9 +23,7 @@ namespace ChangeTracking
             if (itemCanceled == null) throw new ArgumentNullException(nameof(itemCanceled));
             if (childStatusChanged == null) throw new ArgumentNullException(nameof(childStatusChanged));
             if (deleteItem == null) throw new ArgumentNullException(nameof(deleteItem));
-
-
-
+            
             _insertingItem = inseringItem;
             _DeleteItem = deleteItem;
             _ItemCanceled = itemCanceled;
