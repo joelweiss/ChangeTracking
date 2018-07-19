@@ -113,6 +113,7 @@ namespace ChangeTracking.Tests
             var original = trackable.CastToIChangeTrackable().GetOriginal();
             var newOne = Helper.GetOrder();
             original.ShouldBeEquivalentTo(newOne);
+            (original is IChangeTrackable).Should().BeFalse();
         }
 
         [Fact]
@@ -665,6 +666,21 @@ namespace ChangeTracking.Tests
             var trackable = new Order { Id = 321, Address = new Address() }.AsTrackable();
 
             trackable.Invoking(o => o.Address = null).ShouldNotThrow<NullReferenceException>();
+        }
+
+        [Fact]
+        public void GetCurrent_Should_Return_Original()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.Id = 124;
+            trackable.CustomerNumber = "Test1";
+
+            var current = trackable.CastToIChangeTrackable().GetCurrent();
+            
+            current.ShouldBeEquivalentTo(trackable);
+            (current is IChangeTrackable).Should().BeFalse();
         }
     }
 }

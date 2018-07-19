@@ -19,5 +19,15 @@ namespace ChangeTracking.Tests
         {
             return new Order();
         }
+
+        public virtual void VirtualModifier()
+        {
+            CustomerNumber = "ChangedInVirtualModifier";
+        }
+
+        public void NonVirtualModifier()
+        {
+            CustomerNumber = "ChangedInNonVirtualModifier";
+        }
     }
 }
