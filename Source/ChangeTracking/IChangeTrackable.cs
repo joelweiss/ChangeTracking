@@ -21,7 +21,7 @@ namespace ChangeTracking
         TResult GetOriginalValue<TResult>(Expression<Func<T, TResult>> selector);
 
         /// <summary>
-        /// Gets the original.
+        /// Gets the original object as a poco without the current changes.
         /// </summary>
         /// <returns></returns>
         /// <exception cref="System.MissingMethodException">The type that is specified for T does not have a parameterless constructor.</exception>

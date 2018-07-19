@@ -107,7 +107,7 @@ namespace ChangeTracking
                 case nameof(IChangeTrackable<object>.GetOriginal):
                     invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
                     break;
-                case "GetCurrent":
+                case nameof(IChangeTrackable<object>.GetCurrent):
                     invocation.ReturnValue = GetCurrent((T)invocation.Proxy);
                     break;
                 case "add_StatusChanged":
