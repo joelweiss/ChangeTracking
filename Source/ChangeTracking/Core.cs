@@ -42,27 +42,29 @@ namespace ChangeTracking
         {
             Action<object, object> copier = _FieldCopiers.GetOrAdd(type, typeCopying =>
             {
+                List<FieldInfo> fieldInfosToCopy = typeCopying
+                    .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Where(fi => !(fi.Name.StartsWith("<") && fi.Name.EndsWith(">k__BackingField")))
+                    .ToList();
+                if (fieldInfosToCopy.Count == 0)
+                {
+                    return null;
+                }
+
                 ParameterExpression sourceParameter = Expression.Parameter(typeof(object), "source");
                 ParameterExpression targetParameter = Expression.Parameter(typeof(object), "target");
                 UnaryExpression sourceAsType = Expression.Convert(sourceParameter, typeCopying);
                 UnaryExpression targetAsType = Expression.Convert(targetParameter, typeCopying);
 
-                List<Expression> setFieldsExpressions = typeCopying
-                        .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                        .Where(fi => !(fi.Name.StartsWith("<") && fi.Name.EndsWith(">k__BackingField")))
-                        .Select<FieldInfo, Expression>(fi =>
-                        {
-                            if (fi.IsInitOnly)
-                            {
-                                return Expression.Call(Expression.Constant(fi), _SetValueMethodInfo, targetAsType, Expression.Field(sourceAsType, fi));
-                            }
-                            return Expression.Assign(Expression.Field(targetAsType, fi), Expression.Field(sourceAsType, fi));
-                        }).ToList();
-                if (setFieldsExpressions.Count == 0)
+                IEnumerable<Expression> setFieldsExpressions = fieldInfosToCopy.Select<FieldInfo, Expression>(fi =>
                 {
-                    return null;
-                }
-                var block = Expression.Block(setFieldsExpressions);
+                    if (fi.IsInitOnly)
+                    {
+                        return Expression.Call(Expression.Constant(fi), _SetValueMethodInfo, targetAsType, Expression.Field(sourceAsType, fi));
+                    }
+                    return Expression.Assign(Expression.Field(targetAsType, fi), Expression.Field(sourceAsType, fi));
+                });
+                BlockExpression block = Expression.Block(setFieldsExpressions);
 
                 return Expression.Lambda<Action<object, object>>(block, sourceParameter, targetParameter).Compile();
             });
