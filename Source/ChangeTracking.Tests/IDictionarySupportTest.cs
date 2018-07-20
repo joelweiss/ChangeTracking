@@ -11,7 +11,8 @@ namespace ChangeTracking.Tests
     {
         public class Building : IDictionary<string, object>
         {
-            private readonly Dictionary<string, object> _customProperties = new Dictionary<string, object>();
+            [Ignore]
+            protected virtual Dictionary<string, object> CustomProperties { get; } = new Dictionary<string, object>();
             
             public virtual string Name { get; set; }
 
@@ -22,7 +23,7 @@ namespace ChangeTracking.Tests
                 get
                 {
                     object result;
-                    if (_customProperties.TryGetValue(key, out result))
+                    if (CustomProperties.TryGetValue(key, out result))
                     {
                         return result;
                     }
@@ -30,40 +31,40 @@ namespace ChangeTracking.Tests
                 }
                 set
                 {
-                    _customProperties[key] = value;
+                    CustomProperties[key] = value;
                     Debug.WriteLine($"this[]: {this.GetType().FullName} : {this.GetHashCode()}");
                 }
             }
 
             public virtual bool ContainsKey(string key)
             {
-                return _customProperties.ContainsKey(key);
+                return CustomProperties.ContainsKey(key);
             }
 
             public virtual void Add(string key, object value)
             {
-                _customProperties.Add(key, value);
+                CustomProperties.Add(key, value);
             }
 
             public virtual bool Remove(string key)
             {
-                return _customProperties.Remove(key);
+                return CustomProperties.Remove(key);
             }
 
             public virtual bool TryGetValue(string key, out object value)
             {
-                return (_customProperties.TryGetValue(key, out value));
+                return (CustomProperties.TryGetValue(key, out value));
             }
 
             [ChangeTracking.Ignore]
-            public virtual ICollection<string> Keys => _customProperties.Keys;
+            public virtual ICollection<string> Keys => CustomProperties.Keys;
 
             [ChangeTracking.Ignore]
-            public virtual ICollection<object> Values => _customProperties.Values;
+            public virtual ICollection<object> Values => CustomProperties.Values;
 
             public virtual IEnumerator<KeyValuePair<string, object>> GetEnumerator()
             {
-                return _customProperties.GetEnumerator();
+                return CustomProperties.GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -73,17 +74,17 @@ namespace ChangeTracking.Tests
 
             public virtual void Add(KeyValuePair<string, object> item)
             {
-                _customProperties.Add(item.Key, item.Value);
+                CustomProperties.Add(item.Key, item.Value);
             }
 
             public virtual void Clear()
             {
-                _customProperties.Clear();
+                CustomProperties.Clear();
             }
 
             public virtual bool Contains(KeyValuePair<string, object> item)
             {
-                return _customProperties.Any(x => object.Equals(x, item));
+                return CustomProperties.Any(x => object.Equals(x, item));
             }
 
             public virtual void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
@@ -97,7 +98,7 @@ namespace ChangeTracking.Tests
             }
 
             [ChangeTracking.Ignore]
-            public virtual int Count => _customProperties.Count;
+            public virtual int Count => CustomProperties.Count;
             [ChangeTracking.Ignore]
             public virtual bool IsReadOnly => false;
             #endregion IDictionary

@@ -198,21 +198,5 @@ namespace ChangeTracking.Tests
 
             trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
         }
-
-        [Fact]
-        public void GetName_Should_Return_Correct_Value()
-        {
-            // Arrange
-            var order = Helper.GetOrder();
-            order.SetName("MyName");
-
-            var trackable = order.AsTrackable();
-
-            // Act
-            var name = trackable.GetName();
-
-            // Assert
-            Assert.Equal("MyName", name);
-        }
     }
 }
