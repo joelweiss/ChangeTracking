@@ -47,7 +47,7 @@ namespace ChangeTracking
                 UnaryExpression sourceAsType = Expression.Convert(sourceParameter, typeCopying);
                 UnaryExpression targetAsType = Expression.Convert(targetParameter, typeCopying);
 
-                IEnumerable<Expression> setFieldsExpressions = typeCopying
+                List<Expression> setFieldsExpressions = typeCopying
                         .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                         .Where(fi => !(fi.Name.StartsWith("<") && fi.Name.EndsWith(">k__BackingField")))
                         .Select<FieldInfo, Expression>(fi =>
@@ -57,12 +57,16 @@ namespace ChangeTracking
                                 return Expression.Call(Expression.Constant(fi), _SetValueMethodInfo, targetAsType, Expression.Field(sourceAsType, fi));
                             }
                             return Expression.Assign(Expression.Field(targetAsType, fi), Expression.Field(sourceAsType, fi));
-                        });
+                        }).ToList();
+                if (setFieldsExpressions.Count == 0)
+                {
+                    return null;
+                }
                 var block = Expression.Block(setFieldsExpressions);
 
                 return Expression.Lambda<Action<object, object>>(block, sourceParameter, targetParameter).Compile();
             });
-            copier(source, target);
+            copier?.Invoke(source, target);
         }
 
         internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
