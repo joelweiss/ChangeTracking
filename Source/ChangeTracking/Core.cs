@@ -6,30 +6,64 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace ChangeTracking
 {
     public static class Core
     {
-        private static ProxyGenerator _ProxyGenerator;
-        private static IInterceptorSelector _Selector;
-        private static ConcurrentDictionary<Type, ProxyGenerationOptions> _Options;
+        private static readonly ProxyGenerator _ProxyGenerator;
+        private static readonly IInterceptorSelector _Selector;
+        private static readonly ConcurrentDictionary<Type, ProxyGenerationOptions> _Options;
+        private static readonly MethodInfo _SetValueMethodInfo;
+        private static readonly ConcurrentDictionary<Type, Action<object, object>> _FieldCopiers;
 
         static Core()
         {
             _ProxyGenerator = new ProxyGenerator();
             _Selector = new ChangeTrackingInterceptorSelector();
             _Options = new ConcurrentDictionary<Type, ProxyGenerationOptions>();
+            _SetValueMethodInfo = typeof(FieldInfo).GetMethod(nameof(FieldInfo.SetValue), new[] { typeof(object), typeof(object) });
+            _FieldCopiers = new ConcurrentDictionary<Type, Action<object, object>>();
         }
 
-        private static ProxyGenerationOptions CreateOptions(Type type) =>  new ProxyGenerationOptions
+        private static ProxyGenerationOptions CreateOptions(Type type) => new ProxyGenerationOptions
         {
             Hook = new ChangeTrackingProxyGenerationHook(type),
             Selector = _Selector
         };
 
         private static ProxyGenerationOptions GetOptions(Type type) => _Options.GetOrAdd(type, CreateOptions);
+
+        private static void CopyFields<T>(T source, object target) => CopyFields(typeof(T), source, target);
+
+        private static void CopyFields(Type type, object source, object target)
+        {
+            Action<object, object> copier = _FieldCopiers.GetOrAdd(type, typeCopying =>
+            {
+                ParameterExpression sourceParameter = Expression.Parameter(typeof(object), "source");
+                ParameterExpression targetParameter = Expression.Parameter(typeof(object), "target");
+                UnaryExpression sourceAsType = Expression.Convert(sourceParameter, typeCopying);
+                UnaryExpression targetAsType = Expression.Convert(targetParameter, typeCopying);
+
+                IEnumerable<Expression> setFieldsExpressions = typeCopying
+                        .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                        .Where(fi => !(fi.Name.StartsWith("<") && fi.Name.EndsWith(">k__BackingField")))
+                        .Select<FieldInfo, Expression>(fi =>
+                        {
+                            if (fi.IsInitOnly)
+                            {
+                                return Expression.Call(Expression.Constant(fi), _SetValueMethodInfo, targetAsType, Expression.Field(sourceAsType, fi));
+                            }
+                            return Expression.Assign(Expression.Field(targetAsType, fi), Expression.Field(sourceAsType, fi));
+                        });
+                var block = Expression.Block(setFieldsExpressions);
+
+                return Expression.Lambda<Action<object, object>>(block, sourceParameter, targetParameter).Compile();
+            });
+            copier(source, target);
+        }
 
         internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
         {
@@ -57,6 +91,7 @@ namespace ChangeTracking
                          (IInterceptor)editableObjectInterceptor,
                          (IInterceptor)complexPropertyInterceptor,
                          (IInterceptor)collectionPropertyInterceptor);
+            CopyFields(type: type, source: target, target: proxy);
             ((IInterceptorSettings)notifyPropertyChangedInterceptor).IsInitialized = true;
             ((IInterceptorSettings)changeTrackingInterceptor).IsInitialized = true;
             ((IInterceptorSettings)editableObjectInterceptor).IsInitialized = true;
@@ -97,6 +132,7 @@ namespace ChangeTracking
                 editableObjectInterceptor,
                 complexPropertyInterceptor,
                 collectionPropertyInterceptor);
+            CopyFields(source: target, target: proxy);
             notifyPropertyChangedInterceptor.IsInitialized = true;
             changeTrackingInterceptor.IsInitialized = true;
             editableObjectInterceptor.IsInitialized = true;
