@@ -23,7 +23,7 @@ namespace ChangeTracking
             _Options = new ConcurrentDictionary<Type, ProxyGenerationOptions>();
         }
 
-        private static ProxyGenerationOptions CreateOptions(Type type) =>  new ProxyGenerationOptions
+        private static ProxyGenerationOptions CreateOptions(Type type) => new ProxyGenerationOptions
         {
             Hook = new ChangeTrackingProxyGenerationHook(type),
             Selector = _Selector
@@ -35,9 +35,9 @@ namespace ChangeTracking
         {
             Type genericArgument = type.GetGenericArguments().First();
             return _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<>).MakeGenericType(genericArgument),
-                        new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(INotifyCollectionChanged) },
+                        new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) },
                         target,
-                        GetOptions(type),
+                        GetOptions(genericArgument),
                         (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
         }
 
