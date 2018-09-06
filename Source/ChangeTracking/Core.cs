@@ -75,9 +75,9 @@ namespace ChangeTracking
         {
             Type genericArgument = type.GetGenericArguments().First();
             return _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<>).MakeGenericType(genericArgument),
-                        new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(INotifyCollectionChanged) },
+                        new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) },
                         target,
-                        GetOptions(type),
+                        GetOptions(genericArgument),
                         (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
         }
 
