@@ -29,5 +29,11 @@ namespace ChangeTracking.Tests
         {
             CustomerNumber = "ChangedInNonVirtualModifier";
         }
+
+        private string _Name;
+        public virtual void SetNameVirtual(string name) => _Name = name;
+        public virtual string GetNameVirtual() => _Name;
+        public void SetNameNonVirtual(string name) => _Name = name;
+        public string GetNameNonVirtual() => _Name;
     }
 }
