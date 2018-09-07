@@ -678,9 +678,22 @@ namespace ChangeTracking.Tests
             trackable.CustomerNumber = "Test1";
 
             var current = trackable.CastToIChangeTrackable().GetCurrent();
-            
+
             current.ShouldBeEquivalentTo(trackable);
             (current is IChangeTrackable).Should().BeFalse();
+        }
+
+        [Fact]
+        public void Insert_On_Child_Collection_Should_Be_Intercepted()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            EventMonitor monitor = trackable.MonitorStatusChanged();
+
+            trackable.OrderDetails.Insert(0, new OrderDetail());
+
+            monitor.WasRaised.Should().BeTrue();
         }
     }
 }
