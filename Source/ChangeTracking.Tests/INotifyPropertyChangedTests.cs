@@ -21,7 +21,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.CustomerNumber = "Test1";
 
@@ -35,7 +35,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
             var intf = trackable.CastToIChangeTrackable();
             intf.RejectChanges();
 
@@ -47,7 +47,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            var inpc = (System.ComponentModel.INotifyPropertyChanged)trackable;
+            var inpc = (System.ComponentModel.INotifyPropertyChanged) trackable;
             int newValue = 0;
             inpc.PropertyChanged += (o, e) => newValue = order.Id;
 
@@ -61,7 +61,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.OrderDetails[0].ItemNo = "Testing";
 
@@ -73,7 +73,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable(makeCollectionPropertiesTrackable: false);
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.OrderDetails[0].ItemNo = "Testing";
 
@@ -85,7 +85,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.OrderDetails.Add(new OrderDetail
             {
@@ -101,7 +101,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable(makeCollectionPropertiesTrackable: false);
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.OrderDetails.Add(new OrderDetail
             {
@@ -117,7 +117,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.Address.City = "Chicago";
 
@@ -129,7 +129,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.Address.City = "Chicago";
 
@@ -141,7 +141,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.CustomerNumber = "Test1";
             IChangeTrackable<Order> changeTrackable = trackable.CastToIChangeTrackable();
@@ -154,7 +154,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            ((INotifyPropertyChanged) trackable).MonitorEvents();
 
             trackable.CustomerNumber = "Test1";
             IChangeTrackable<Order> changeTrackable = trackable.CastToIChangeTrackable();
@@ -165,7 +165,7 @@ namespace ChangeTracking.Tests
         [Fact]
         public void Change_Property_From_Value_To_Null_Should_Stop_Notification()
         {
-            Order trackable = new Order { Id = 321, Address = new Address { AddressId = 0 } }.AsTrackable();
+            Order trackable = new Order {Id = 321, Address = new Address {AddressId = 0}}.AsTrackable();
             Address trackableAddress = trackable.Address;
             trackable.Address = null;
 
@@ -173,30 +173,6 @@ namespace ChangeTracking.Tests
             trackableAddress.AddressId = 2;
 
             trackable.ShouldNotRaisePropertyChangeFor(o => o.Address);
-        }
-        
-        [Fact]
-        public void Change_Property_Should_Raise_PropertyChanged_Event_if_non_virtual_method()
-        {
-            var order = Helper.GetOrder();
-            var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
-
-            trackable.NonVirtualModifier();
-
-            trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
-        }
-        
-        [Fact]
-        public void Change_Property_Should_Raise_PropertyChanged_Event_if_method_virtual()
-        {
-            var order = Helper.GetOrder();
-            var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
-
-            trackable.VirtualModifier();
-
-            trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
         }
     }
 }
