@@ -235,6 +235,9 @@ namespace ChangeTracking
             
             foreach (var item in allChangedItems)
             {
+                if(item == null)
+                    continue;
+
                 if ((item.ChangeTrackingStatus == ChangeStatus.Added ||
                      item.ChangeTrackingStatus == ChangeStatus.Changed) &&
                     !_UnchangedItems.Contains((T) item))
