@@ -103,8 +103,7 @@ namespace ChangeTracking
             return propertyType.IsClass &&
                 !propertyType.IsSealed &&
                 propertyType.GetConstructor(Type.EmptyTypes) != null &&
-                propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Any(pi => pi.CanRead && pi.CanWrite) &&
-                propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => pi.CanRead && pi.CanWrite && pi.GetAccessors()[0].IsVirtual);
+                propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => pi.GetAccessors()[0].IsVirtual);
         }
 
         public void Intercept(IInvocation invocation)
