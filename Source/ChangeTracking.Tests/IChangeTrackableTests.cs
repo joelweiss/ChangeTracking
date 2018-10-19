@@ -695,5 +695,14 @@ namespace ChangeTracking.Tests
 
             monitor.WasRaised.Should().BeTrue();
         }
+
+        [Fact]
+        public void Complex_Property_Should_Be_Trackable_Even_Not_All_Properties_Are_Read_Write()
+        {
+            var order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.Address.Should().BeAssignableTo<IChangeTrackable<Address>>();
+        }
     }
 }

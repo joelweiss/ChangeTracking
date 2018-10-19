@@ -116,13 +116,13 @@ namespace ChangeTracking
 
             var canComplexPropertyBeTrackable =
                 propertyType.IsClass &&
-                !propertyType.IsSealed &&
+                propertyType.IsSealed == false &&
                 propertyType.GetConstructor(Type.EmptyTypes) != null;
 
             if (canComplexPropertyBeTrackable == false)
                 return false;
 
-            var elements = propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(pi => pi.GetCustomAttributes(typeof(IgnoreAttribute), true).Any() || (pi.CanRead && pi.CanWrite));
+            var elements = propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             return elements.Any() &&
                    elements.All(pi => pi.GetAccessors()[0].IsVirtual);
