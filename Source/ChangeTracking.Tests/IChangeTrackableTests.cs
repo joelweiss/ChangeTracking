@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 
@@ -696,8 +698,6 @@ namespace ChangeTracking.Tests
             monitor.WasRaised.Should().BeTrue();
         }
 
-
-
         [Fact]
         public void Complex_Property_Should_Be_Trackable_Even_Not_All_Properties_Are_Read_Write()
         {
@@ -705,6 +705,54 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
 
             trackable.Address.Should().BeAssignableTo<IChangeTrackable<Address>>();
+        }
+        
+        [Fact]
+        public async Task Concurrent_Access_To_ComplexProperty_Should_Not_Throw()
+        {
+            Order order = Helper.GetOrder();
+            Order trackable = order.AsTrackable();
+
+            int count = 2;
+            Address[] addresses = new Address[count];
+            Task[] tasks = new Task[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                int index = i;
+                tasks[index] = Task.Run(() =>
+                {
+                    addresses[index] = trackable.Address;
+                });
+            }
+            await Task.WhenAll(tasks);
+
+            Address firstAddress = addresses[0];
+            addresses.All(a => a != null && ReferenceEquals(firstAddress, a)).Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Concurrent_Access_To_CollectionProperty_Should_Not_Throw()
+        {
+            Order order = Helper.GetOrder();
+            Order trackable = order.AsTrackable();
+
+            int count = 2;
+            IList<OrderDetail>[] orderDetails = new IList<OrderDetail>[count];
+            Task[] tasks = new Task[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                int index = i;
+                tasks[index] = Task.Run(() =>
+                {
+                    orderDetails[index] = trackable.OrderDetails;
+                });
+            }
+            await Task.WhenAll(tasks);
+
+            IList<OrderDetail> firstOrderDetails = orderDetails[0];
+            orderDetails.All(od => od != null && ReferenceEquals(firstOrderDetails, od)).Should().BeTrue();
         }
     }
 }
