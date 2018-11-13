@@ -14,6 +14,7 @@ namespace ChangeTracking
         private static Dictionary<string, PropertyInfo> _Properties;
         private ChangeStatus _ChangeTrackingStatus;
         private readonly Dictionary<string, Delegate> _StatusChangedEventHandlers;
+        private readonly object _StatusChangedEventHandlersLock;
         private bool _InRejectChanges;
         private static readonly PropertyInfo _DynamicProperty;
         private static readonly HashSet<string> _IgnoredProperties;
@@ -38,6 +39,7 @@ namespace ChangeTracking
         {
             _OriginalValueDictionary = new Dictionary<string, object>();
             _StatusChangedEventHandlers = new Dictionary<string, Delegate>();
+            _StatusChangedEventHandlersLock = new object();
             _ChangeTrackingStatus = status;
         }
 
@@ -162,7 +164,7 @@ namespace ChangeTracking
 
             string propName = propertyInfo.Name;
             TResult originalValue = _OriginalValueDictionary.TryGetValue(propName, out object value) ?
-                (TResult)value : 
+                (TResult)value :
                 selector.Compile()(target);
             if (originalValue is IChangeTrackableInternal trackable)
             {
@@ -351,38 +353,44 @@ namespace ChangeTracking
         
         private void UnsubscribeFromChildStatusChanged(string propertyName, object oldChild)
         {
-            if (_StatusChangedEventHandlers.TryGetValue(propertyName, out Delegate handler))
+            lock (_StatusChangedEventHandlersLock)
             {
-                if (oldChild is IChangeTrackable trackable)
+                if (_StatusChangedEventHandlers.TryGetValue(propertyName, out Delegate handler))
                 {
-                    trackable.StatusChanged -= (EventHandler<StatusChangedEventArgs>)handler;
-                    _StatusChangedEventHandlers.Remove(propertyName);
-                    return;
-                }
-                if (oldChild is System.ComponentModel.IBindingList collectionTrackable)
-                {
-                    collectionTrackable.ListChanged -= (System.ComponentModel.ListChangedEventHandler)handler;
-                    _StatusChangedEventHandlers.Remove(propertyName);
+                    if (oldChild is IChangeTrackable trackable)
+                    {
+                        trackable.StatusChanged -= (EventHandler<StatusChangedEventArgs>)handler;
+                        _StatusChangedEventHandlers.Remove(propertyName);
+                        return;
+                    }
+                    if (oldChild is System.ComponentModel.IBindingList collectionTrackable)
+                    {
+                        collectionTrackable.ListChanged -= (System.ComponentModel.ListChangedEventHandler)handler;
+                        _StatusChangedEventHandlers.Remove(propertyName);
+                    }
                 }
             }
         }
 
         private void SubscribeToChildStatusChanged(object proxy, string propertyName, object newValue)
         {
-            if (!_StatusChangedEventHandlers.ContainsKey(propertyName))
+            lock (_StatusChangedEventHandlersLock)
             {
-                if (newValue is IChangeTrackable newChild)
+                if (!_StatusChangedEventHandlers.ContainsKey(propertyName))
                 {
-                    EventHandler<StatusChangedEventArgs> newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
-                    newChild.StatusChanged += newHandler;
-                    _StatusChangedEventHandlers.Add(propertyName, newHandler);
-                    return;
-                }
-                if (newValue is System.ComponentModel.IBindingList newCollectionChild)
-                {
-                    System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
-                    newCollectionChild.ListChanged += newHandler;
-                    _StatusChangedEventHandlers.Add(propertyName, newHandler);
+                    if (newValue is IChangeTrackable newChild)
+                    {
+                        EventHandler<StatusChangedEventArgs> newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
+                        newChild.StatusChanged += newHandler;
+                        _StatusChangedEventHandlers.Add(propertyName, newHandler);
+                        return;
+                    }
+                    if (newValue is System.ComponentModel.IBindingList newCollectionChild)
+                    {
+                        System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
+                        newCollectionChild.ListChanged += newHandler;
+                        _StatusChangedEventHandlers.Add(propertyName, newHandler);
+                    }
                 }
             }
         }

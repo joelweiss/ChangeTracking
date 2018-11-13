@@ -4,14 +4,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace ChangeTracking
 {
     internal class CollectionPropertyInterceptor<T> : IInterceptor, IInterceptorSettings
     {
         private static readonly List<PropertyInfo> _Properties;
-        private static Dictionary<string, Action<IInvocation, Dictionary<string, object>, bool, bool>> _Actions;
+        private static Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool>> _Actions;
         private readonly Dictionary<string, object> _Trackables;
+        private readonly object _TrackablesLock;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
         private bool _AreAllPropertiesTrackable;
@@ -23,14 +25,14 @@ namespace ChangeTracking
 
         static CollectionPropertyInterceptor()
         {
-            _Actions = new Dictionary<string, Action<IInvocation, Dictionary<string, object>, bool, bool>>();
+            _Actions = new Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool>>();
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
-            var getters = _Properties.Where(pi => pi.CanRead).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, bool, bool>>(pi.Name, GetGetterAction(pi)));
+            var getters = _Properties.Where(pi => pi.CanRead).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool>>(pi.Name, GetGetterAction(pi)));
             foreach (var getter in getters)
             {
                 _Actions.Add(GET + getter.Key, getter.Value);
             }
-            var setters = _Properties.Where(pi => pi.CanWrite).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, bool, bool>>(pi.Name, GetSetterAction(pi)));
+            var setters = _Properties.Where(pi => pi.CanWrite).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool>>(pi.Name, GetSetterAction(pi)));
             foreach (var setter in setters)
             {
                 _Actions.Add(SET + setter.Key, setter.Value);
@@ -42,60 +44,80 @@ namespace ChangeTracking
             _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
             _MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
             _Trackables = new Dictionary<string, object>();
+            _TrackablesLock = new object();
         }
 
-        private static Action<IInvocation, Dictionary<string, object>, bool, bool> GetGetterAction(PropertyInfo propertyInfo)
+        private static Action<IInvocation, Dictionary<string, object>, object, bool, bool> GetGetterAction(PropertyInfo propertyInfo)
         {
             if (CanCollectionBeTrackable(propertyInfo))
             {
-                return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
+                return (invocation, trackables, trackablesLock, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
                 {
                     string propertyName = invocation.GetPropertyName();
-                    if (!trackables.ContainsKey(propertyName))
+                    lock (trackablesLock)
                     {
-                        object childTarget = propertyInfo.GetValue(invocation.InvocationTarget, invocation.GetParameter());
-                        if (childTarget == null)
+                        if (!trackables.ContainsKey(propertyName))
                         {
-                            return;
+                            object childTarget = propertyInfo.GetValue(invocation.InvocationTarget, invocation.GetParameter());
+                            if (childTarget == null)
+                            {
+                                return;
+                            }
+                            trackables.Add(propertyName, Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
                         }
-                        trackables.Add(propertyName, Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+                        invocation.ReturnValue = trackables[propertyName];
                     }
-                    invocation.ReturnValue = trackables[propertyName];
                 };
             }
-            return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
+            return (invocation, _, __, ___, ____) =>
             {
                 invocation.Proceed();
             };
         }
 
-        private static Action<IInvocation, Dictionary<string, object>, bool, bool> GetSetterAction(PropertyInfo propertyInfo)
+        private static Action<IInvocation, Dictionary<string, object>, object, bool, bool> GetSetterAction(PropertyInfo propertyInfo)
         {
             if (CanCollectionBeTrackable(propertyInfo))
             {
-                return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
+                return (invocation, trackables, trackablesLock, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
                 {
                     string parentPropertyName = invocation.GetPropertyName();
                     invocation.Proceed();
 
-                    object childTarget = invocation.Arguments[0];
-                    object newValue;
-                    if (invocation.Arguments[0] == null)
+                    bool lockWasTaken = false;
+                    try
                     {
-                        newValue = null;
+                        object childTarget = invocation.Arguments[0];
+                        object newValue;
+                        if (invocation.Arguments[0] == null)
+                        {
+                            newValue = null;
+                        }
+                        else if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackableCollection<>)) != null)
+                        {
+                            newValue = invocation.Arguments[0];
+                        }
+                        else
+                        {
+                            Monitor.Enter(trackablesLock, ref lockWasTaken);
+                            newValue = Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+                        }
+                        if (!lockWasTaken)
+                        {
+                            Monitor.Enter(trackablesLock, ref lockWasTaken);
+                        }
+                        trackables[parentPropertyName] = newValue;
                     }
-                    else if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackableCollection<>)) != null)
+                    finally
                     {
-                        newValue = invocation.Arguments[0];
+                        if (lockWasTaken)
+                        {
+                            Monitor.Exit(trackablesLock);
+                        }
                     }
-                    else
-                    {
-                        newValue = Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-                    }
-                    trackables[parentPropertyName] = newValue;
                 };
             }
-            return (invocation, trackables, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable) =>
+            return (invocation, _, __, ___, ____) =>
             {
                 invocation.Proceed();
             };
@@ -123,9 +145,9 @@ namespace ChangeTracking
                 invocation.ReturnValue = CollectionPropertyTrackables(invocation.Proxy);
                 return;
             }
-            if (_MakeCollectionPropertiesTrackable && _Actions.TryGetValue(invocation.Method.Name, out Action<IInvocation, Dictionary<string, object>, bool, bool> action))
+            if (_MakeCollectionPropertiesTrackable && _Actions.TryGetValue(invocation.Method.Name, out Action<IInvocation, Dictionary<string, object>, object, bool, bool> action))
             {
-                action(invocation, _Trackables, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+                action(invocation, _Trackables, _TrackablesLock, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
             }
             else
             {
@@ -143,7 +165,10 @@ namespace ChangeTracking
             {
                 MakeAllPropertiesTrackable(proxy);
             }
-            return _Trackables.Values;
+            lock (_TrackablesLock)
+            {
+                return _Trackables.Values.ToArray();
+            }
         }
 
         private void MakeAllPropertiesTrackable(object proxy)

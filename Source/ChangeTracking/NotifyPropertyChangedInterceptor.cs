@@ -11,7 +11,10 @@ namespace ChangeTracking
     {
         private static Dictionary<string, PropertyInfo> _Properties;
         private readonly Dictionary<string, PropertyChangedEventHandler> _PropertyChangedEventHandlers;
+        private readonly object _PropertyChangedEventHandlersLock;
         private readonly Dictionary<string, ListChangedEventHandler> _ListChangedEventHandlers;
+        private readonly object _ListChangedEventHandlersLock;
+
         private static readonly PropertyInfo _DynamicProperty;
 
         public bool IsInitialized { get; set; }
@@ -31,7 +34,9 @@ namespace ChangeTracking
         internal NotifyPropertyChangedInterceptor(ChangeTrackingInterceptor<T> changeTrackingInterceptor)
         {
             _PropertyChangedEventHandlers = new Dictionary<string, PropertyChangedEventHandler>();
+            _PropertyChangedEventHandlersLock = new object();
             _ListChangedEventHandlers = new Dictionary<string, ListChangedEventHandler>();
+            _ListChangedEventHandlersLock = new object();
             changeTrackingInterceptor._StatusChanged += (o, e) =>
             {
                 RaisePropertyChanged(o, nameof(IChangeTrackable.ChangeTrackingStatus));
@@ -90,39 +95,63 @@ namespace ChangeTracking
 
         private void UnsubscribeFromChildPropertyChanged(string propertyName, object oldChild)
         {
-            if (oldChild is INotifyPropertyChanged trackable && _PropertyChangedEventHandlers.TryGetValue(propertyName, out global::System.ComponentModel.PropertyChangedEventHandler handler))
+            if (oldChild is INotifyPropertyChanged trackable)
             {
-                trackable.PropertyChanged -= handler;
-                _PropertyChangedEventHandlers.Remove(propertyName);
+                lock (_PropertyChangedEventHandlersLock)
+                {
+                    if (_PropertyChangedEventHandlers.TryGetValue(propertyName, out PropertyChangedEventHandler handler))
+                    {
+                        trackable.PropertyChanged -= handler;
+                        _PropertyChangedEventHandlers.Remove(propertyName);
+                    } 
+                }
             }
         }
 
         private void SubscribeToChildPropertyChanged(IInvocation invocation, string propertyName, object newValue)
         {
-            if (newValue is INotifyPropertyChanged newChild && !_PropertyChangedEventHandlers.ContainsKey(propertyName))
+            if (newValue is INotifyPropertyChanged newChild)
             {
-                PropertyChangedEventHandler newHandler = (object sender, PropertyChangedEventArgs e) => RaisePropertyChanged(invocation.Proxy, propertyName);
-                newChild.PropertyChanged += newHandler;
-                _PropertyChangedEventHandlers.Add(propertyName, newHandler);
+                lock (_PropertyChangedEventHandlersLock)
+                {
+                    if (!_PropertyChangedEventHandlers.ContainsKey(propertyName))
+                    {
+                        void newHandler(object sender, PropertyChangedEventArgs e) => RaisePropertyChanged(invocation.Proxy, propertyName);
+                        newChild.PropertyChanged += newHandler;
+                        _PropertyChangedEventHandlers.Add(propertyName, newHandler);
+                    } 
+                }
             }
         }
 
         private void UnsubscribeFromChildListChanged(string propertyName, object oldChild)
         {
-            if (oldChild is IBindingList trackable && _ListChangedEventHandlers.TryGetValue(propertyName, out global::System.ComponentModel.ListChangedEventHandler handler))
+            if (oldChild is IBindingList trackable)
             {
-                trackable.ListChanged -= handler;
-                _ListChangedEventHandlers.Remove(propertyName);
+                lock (_ListChangedEventHandlersLock)
+                {
+                    if (_ListChangedEventHandlers.TryGetValue(propertyName, out ListChangedEventHandler handler))
+                    {
+                        trackable.ListChanged -= handler;
+                        _ListChangedEventHandlers.Remove(propertyName);
+                    }
+                }
             }
         }
 
         private void SubscribeToChildListChanged(IInvocation invocation, string propertyName, object newValue)
         {
-            if (newValue is IBindingList newChild && !_ListChangedEventHandlers.ContainsKey(propertyName))
+            if (newValue is IBindingList newChild)
             {
-                ListChangedEventHandler newHandler = (object sender, ListChangedEventArgs e) => RaisePropertyChanged(invocation.Proxy, propertyName);
-                newChild.ListChanged += newHandler;
-                _ListChangedEventHandlers.Add(propertyName, newHandler);
+                lock (_ListChangedEventHandlersLock)
+                {
+                    if (!_ListChangedEventHandlers.ContainsKey(propertyName))
+                    {
+                        void newHandler(object sender, ListChangedEventArgs e) => RaisePropertyChanged(invocation.Proxy, propertyName);
+                        newChild.ListChanged += newHandler;
+                        _ListChangedEventHandlers.Add(propertyName, newHandler);
+                    }
+                }
             }
         }
 
