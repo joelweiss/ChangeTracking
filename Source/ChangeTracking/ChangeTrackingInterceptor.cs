@@ -54,7 +54,7 @@ namespace ChangeTracking
             {
                 if (_ChangeTrackingStatus == ChangeStatus.Deleted)
                 {
-                    throw new InvalidOperationException("Can not modify deleted object");
+                    throw new InvalidOperationException($"Can not modify deleted object from type '{typeof(T).FullName}'");
                 }
                 bool noOriginalValueFound = !_OriginalValueDictionary.ContainsKey(propertyName);
 
