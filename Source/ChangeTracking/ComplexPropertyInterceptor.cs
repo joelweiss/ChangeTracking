@@ -121,6 +121,10 @@ namespace ChangeTracking
 
         private static bool CanComplexPropertyBeTrackable(PropertyInfo propertyInfo)
         {
+            if (!propertyInfo.CanWrite)
+            {
+                return false;
+            }
             Type propertyType = propertyInfo.PropertyType;
             return propertyType.IsClass &&
                 !propertyType.IsSealed &&
