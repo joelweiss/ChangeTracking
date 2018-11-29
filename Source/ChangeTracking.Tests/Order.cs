@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace ChangeTracking.Tests
 {
@@ -14,6 +15,8 @@ namespace ChangeTracking.Tests
         public virtual Address Address { get; set; }
         public virtual IList<OrderDetail> OrderDetails { get; set; }
         public virtual int OrderDetailsCount => OrderDetails != null ? OrderDetails.Count : 0;
+        public virtual OrderDetail OrderDetail => OrderDetails?.FirstOrDefault(od => od.OrderDetailId == Id);
+
 
         public Order CreateOrder()
         {

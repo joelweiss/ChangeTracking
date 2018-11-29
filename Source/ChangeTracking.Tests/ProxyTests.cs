@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Xunit;
 
 namespace ChangeTracking.Tests
@@ -99,7 +100,7 @@ namespace ChangeTracking.Tests
                 }
             };
 
-            Game trackableGame = game.AsTrackable();            
+            Game trackableGame = game.AsTrackable();
 
             trackableGame._ReadOnly.Should().Be("ReadOnly");
             trackableGame.Property.Should().Be("Test");
@@ -171,6 +172,19 @@ namespace ChangeTracking.Tests
             private string _Name;
             public virtual void SetName(string name) => _Name = name;
             public virtual string GetName() => _Name;
+        }
+        
+        [Fact]
+        public void ReadOnlyProperty_Should_Not_BeCaptured_As_A_Trackable()
+        {
+            Order order = Helper.GetOrder();
+            Order trackable = order.AsTrackable();
+
+            OrderDetail orderDetail = trackable.OrderDetail;
+            trackable.Id = 2;
+
+            trackable.OrderDetail.ItemNo.Should().Be("Item369");
+            trackable.OrderDetail.OrderDetailId.Should().Be(2);
         }
     }
 }

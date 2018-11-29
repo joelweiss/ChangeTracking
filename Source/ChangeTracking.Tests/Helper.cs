@@ -5,7 +5,7 @@ namespace ChangeTracking.Tests
 {
     internal static class Helper
     {
-        internal static Order GetOrder(int id = 1, string custumerNumber = "Test")
+        internal static Order GetOrder()
         {
             return new Order
             {
