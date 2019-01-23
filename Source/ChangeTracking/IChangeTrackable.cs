@@ -61,5 +61,7 @@ namespace ChangeTracking
     {
         object GetOriginal();
         object GetCurrent();
+        void AcceptChanges(List<object> parents);
+        void RejectChanges(List<object> parents);
     }
 }

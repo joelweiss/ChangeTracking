@@ -1,4 +1,5 @@
 ﻿using Castle.DynamicProxy;
+using ChangeTracking.Internal;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -71,25 +72,37 @@ namespace ChangeTracking
             copier?.Invoke(source, target);
         }
 
-        internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
+        internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph)
         {
+            ProxyTargetMap existing = graph.GetExistingProxyForTarget(target);
+            if (existing != null)
+            {
+                return existing.Proxy;
+            }
             Type genericArgument = type.GetGenericArguments().First();
-            return _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<>).MakeGenericType(genericArgument),
+            object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<>).MakeGenericType(genericArgument),
                         new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) },
                         target,
                         GetOptions(genericArgument),
-                        (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+                        (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
+            graph.Add(new ProxyTargetMap(target, proxy));
+            return proxy;
         }
 
-        internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
+        internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Internal.Graph graph)
         {
+            Internal.ProxyTargetMap existing = graph.GetExistingProxyForTarget(target);
+            if (existing != null)
+            {
+                return existing.Proxy;
+            }
             var changeTrackingInterceptor = CreateInstance(typeof(ChangeTrackingInterceptor<>).MakeGenericType(type), ChangeStatus.Unchanged);
             var notifyPropertyChangedInterceptor = CreateInstance(typeof(NotifyPropertyChangedInterceptor<>).MakeGenericType(type), changeTrackingInterceptor);
             var editableObjectInterceptor = CreateInstance(typeof(EditableObjectInterceptor<>).MakeGenericType(type), notifyParentItemCanceled);
-            var complexPropertyInterceptor = CreateInstance(typeof(ComplexPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-            var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+            var complexPropertyInterceptor = CreateInstance(typeof(ComplexPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
+            var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(type,
-                         new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
+                         new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
                          target,
                          GetOptions(type),
                          (IInterceptor)notifyPropertyChangedInterceptor,
@@ -103,6 +116,7 @@ namespace ChangeTracking
             ((IInterceptorSettings)editableObjectInterceptor).IsInitialized = true;
             ((IInterceptorSettings)complexPropertyInterceptor).IsInitialized = true;
             ((IInterceptorSettings)collectionPropertyInterceptor).IsInitialized = true;
+            graph.Add(new ProxyTargetMap(target, proxy));
             return proxy;
         }
 
@@ -113,11 +127,19 @@ namespace ChangeTracking
 
         public static T AsTrackable<T>(this T target, ChangeStatus status = ChangeStatus.Unchanged, bool makeComplexPropertiesTrackable = true, bool makeCollectionPropertiesTrackable = true) where T : class
         {
-            return AsTrackable(target, status, null, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+            Graph graph = new Graph();
+            T trackable = AsTrackable(target, status, null, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
+            return trackable;
         }
 
-        internal static T AsTrackable<T>(this T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
+        internal static T AsTrackable<T>(this T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph) where T : class
         {
+            Internal.ProxyTargetMap existing = graph.GetExistingProxyForTarget(target);
+            if (existing != null)
+            {
+                return (T)existing.Proxy;
+            }
+
             //if T was ICollection<T> it would of gone to one of the other overloads
             if (target as ICollection != null)
             {
@@ -127,10 +149,10 @@ namespace ChangeTracking
             var changeTrackingInterceptor = new ChangeTrackingInterceptor<T>(status);
             var notifyPropertyChangedInterceptor = new NotifyPropertyChangedInterceptor<T>(changeTrackingInterceptor);
             var editableObjectInterceptor = new EditableObjectInterceptor<T>(notifyParentListItemCanceled);
-            var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-            var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
+            var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
+            var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
-                new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObject), typeof(System.ComponentModel.INotifyPropertyChanged) },
+                new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
                 target,
                 GetOptions(typeof(T)),
                 notifyPropertyChangedInterceptor,
@@ -144,6 +166,7 @@ namespace ChangeTracking
             editableObjectInterceptor.IsInitialized = true;
             complexPropertyInterceptor.IsInitialized = true;
             collectionPropertyInterceptor.IsInitialized = true;
+            graph.Add(new ProxyTargetMap(target, proxy));
             return (T)proxy;
         }
 
@@ -193,8 +216,11 @@ namespace ChangeTracking
             {
                 throw new InvalidOperationException("some items in the collection are already being tracked");
             }
+
+            Internal.Graph graph = new Internal.Graph();
             object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<T>),
-                new[] { typeof(IChangeTrackableCollection<T>), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, GetOptions(typeof(T)), new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+                new[] { typeof(IChangeTrackableCollection<T>), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, GetOptions(typeof(T)), new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
+            graph.Add(new ProxyTargetMap(target, proxy));
             return (IList<T>)proxy;
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Castle.DynamicProxy;
+using ChangeTracking.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,13 +75,13 @@ namespace ChangeTracking
             switch (invocation.Method.Name)
             {
                 case "BeginEdit":
-                    BeginEdit(invocation.Proxy);
+                    BeginEdit(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
                 case "CancelEdit":
-                    CancelEdit(invocation.Proxy);
+                    CancelEdit(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
                 case "EndEdit":
-                    EndEdit(invocation.Proxy);
+                    EndEdit(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
                 default:
                     invocation.Proceed();
@@ -88,20 +89,22 @@ namespace ChangeTracking
             }
         }
 
-        private void BeginEdit(object proxy)
+        private void BeginEdit(object proxy, List<object> parents)
         {
-            foreach (var child in GetChildren(proxy))
+            parents = parents ?? new List<object>(20) { proxy };
+            foreach (var child in Utils.GetChildren<IEditableObjectInternal>(proxy, parents))
             {
-                child.BeginEdit();
+                child.BeginEdit(parents);
             }
             _IsEditing = true;
         }
 
-        private void CancelEdit(object proxy)
+        private void CancelEdit(object proxy, List<object> parents)
         {
-            foreach (var child in GetChildren(proxy))
+            parents = parents ?? new List<object>(20) { proxy };
+            foreach (var child in Utils.GetChildren<IEditableObjectInternal>(proxy, parents))
             {
-                child.CancelEdit();
+                child.CancelEdit(parents);
             }
             if (_IsEditing)
             {
@@ -114,24 +117,18 @@ namespace ChangeTracking
             }
         }
 
-        private void EndEdit(object proxy)
+        private void EndEdit(object proxy, List<object> parents)
         {
-            foreach (var child in GetChildren(proxy))
+            parents = parents ?? new List<object>(20) { proxy };
+            foreach (var child in Utils.GetChildren<IEditableObjectInternal>(proxy, parents))
             {
-                child.EndEdit();
+                child.EndEdit(parents);
             }
             if (_IsEditing == true)
             {
                 _IsEditing = false;
                 _BeforeEditValues.Clear();
             }
-        }
-
-        private static IEnumerable<System.ComponentModel.IEditableObject> GetChildren(object proxy)
-        {
-            return ((ICollectionPropertyTrackable)proxy).CollectionPropertyTrackables
-                .Concat(((IComplexPropertyTrackable)proxy).ComplexPropertyTrackables)
-                .OfType<System.ComponentModel.IEditableObject>();
         }
     }
 }

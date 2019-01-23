@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using System;
 using System.ComponentModel;
 using Xunit;
 
@@ -173,6 +174,26 @@ namespace ChangeTracking.Tests
             trackableAddress.AddressId = 2;
 
             trackable.ShouldNotRaisePropertyChangeFor(o => o.Address);
+        }
+
+        [Fact]
+        public void PropertyChanged_On_Circular_Reference_Should_Not_Throw_OverflowException()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var trackable = update0.AsTrackable();
+            //read these properties to force event wire up
+            _ = trackable.LinkedInventoryUpdate.LinkedToInventoryUpdate;
+            trackable.InventoryUpdateId = 3;
         }
     }
 }

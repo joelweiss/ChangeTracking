@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 
-namespace ChangeTracking
+namespace ChangeTracking.Internal
 {
-    public static class Utils
+    public static class Extensions
     {
         public static bool IsSetter(this MethodInfo method)
         {

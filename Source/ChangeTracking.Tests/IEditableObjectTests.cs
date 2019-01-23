@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using System;
 using Xunit;
 
 namespace ChangeTracking.Tests
@@ -59,7 +60,7 @@ namespace ChangeTracking.Tests
 
             trackable.CustomerNumber.Should().Be("Testing", because: "item was canceled after calling EndEdit");
         }
-        
+
         [Fact]
         public void AsTrackable_Should_Make_Object_Complex_Property_Implement_IEditableObject()
         {
@@ -93,6 +94,63 @@ namespace ChangeTracking.Tests
             editableObject.CancelEdit();
 
             trackable.Address.City.Should().Be("New York", because: "parent item was canceled");
+        }
+
+        [Fact]
+        public void BeginEdit_On_Circular_Reference_Should_Not_Throw_OverflowException()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var trackable = update0.AsTrackable();
+
+            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).BeginEdit()).ShouldNotThrow<OverflowException>();
+        }
+
+        [Fact]
+        public void CancelEdit_On_Circular_Reference_Should_Not_Throw_OverflowException()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var trackable = update0.AsTrackable();
+
+            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).CancelEdit()).ShouldNotThrow<OverflowException>();
+        }
+
+        [Fact]
+        public void EndEdit_On_Circular_Reference_Should_Not_Throw_OverflowException()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var trackable = update0.AsTrackable();
+
+            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).EndEdit()).ShouldNotThrow<OverflowException>();
         }
     }
 }

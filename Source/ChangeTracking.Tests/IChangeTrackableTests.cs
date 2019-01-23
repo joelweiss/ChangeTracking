@@ -706,7 +706,7 @@ namespace ChangeTracking.Tests
 
             trackable.Address.Should().BeAssignableTo<IChangeTrackable<Address>>();
         }
-        
+
         [Fact]
         public async Task Concurrent_Access_To_ComplexProperty_Should_Not_Throw()
         {
@@ -753,6 +753,66 @@ namespace ChangeTracking.Tests
 
             IList<OrderDetail> firstOrderDetails = orderDetails[0];
             orderDetails.All(od => od != null && ReferenceEquals(firstOrderDetails, od)).Should().BeTrue();
+        }
+
+        [Fact]
+        public void AcceptChanges_On_Circular_Reference_Should_Not_Throw_OverflowException()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var trackable = update0.AsTrackable();
+            trackable.InventoryUpdateId = 3;
+
+            trackable.Invoking(t => t.CastToIChangeTrackable().AcceptChanges()).ShouldNotThrow<OverflowException>();
+        }
+
+        [Fact]
+        public void RejectChanges_On_Circular_Reference_Should_Not_Throw_OverflowException()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var trackable = update0.AsTrackable();
+            trackable.InventoryUpdateId = 3;
+
+            trackable.Invoking(t => t.CastToIChangeTrackable().RejectChanges()).ShouldNotThrow<OverflowException>();
+        }
+
+        [Fact]
+        public void Circular_Reference_Should_Be_Same_Reference()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var trackable = update0.AsTrackable();
+
+            trackable.Should().BeSameAs(trackable.LinkedInventoryUpdate.LinkedToInventoryUpdate);
+            trackable.LinkedInventoryUpdate.Should().BeSameAs(trackable.LinkedInventoryUpdate.LinkedToInventoryUpdate.LinkedInventoryUpdate);
         }
     }
 }

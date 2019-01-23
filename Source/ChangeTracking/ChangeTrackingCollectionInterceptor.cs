@@ -1,4 +1,5 @@
 ﻿using Castle.DynamicProxy;
+using ChangeTracking.Internal;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace ChangeTracking
         private static HashSet<string> _INotifyCollectionChangedImplementedMethods;
         private readonly bool _MakeComplexPropertiesTrackable;
         private readonly bool _MakeCollectionPropertiesTrackable;
+        private readonly Graph _Graph;
 
         public bool IsInitialized { get; set; }
 
@@ -27,15 +29,16 @@ namespace ChangeTracking
             _INotifyCollectionChangedImplementedMethods = new HashSet<string>(typeof(INotifyCollectionChanged).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
         }
 
-        internal ChangeTrackingCollectionInterceptor(IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
+        internal ChangeTrackingCollectionInterceptor(IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph)
         {
             _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
             _MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
+            _Graph = graph;
             for (int i = 0; i < target.Count; i++)
             {
-                target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+                target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable, _Graph);
             }
-            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable);
+            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable, _Graph);
             _DeletedItems = new List<T>();
         }
         

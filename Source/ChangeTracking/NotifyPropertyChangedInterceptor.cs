@@ -1,4 +1,5 @@
 ﻿using Castle.DynamicProxy;
+using ChangeTracking.Internal;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -13,6 +14,8 @@ namespace ChangeTracking
         private readonly object _PropertyChangedEventHandlersLock;
         private readonly Dictionary<string, ListChangedEventHandler> _ListChangedEventHandlers;
         private readonly object _ListChangedEventHandlersLock;
+        private readonly HashSet<string> _CurrentlyExecutingPropertyChangedEvents;
+        private readonly object _CurrentlyExecutingPropertyChangedEventsLock;
 
         public bool IsInitialized { get; set; }
 
@@ -27,6 +30,8 @@ namespace ChangeTracking
             _PropertyChangedEventHandlersLock = new object();
             _ListChangedEventHandlers = new Dictionary<string, ListChangedEventHandler>();
             _ListChangedEventHandlersLock = new object();
+            _CurrentlyExecutingPropertyChangedEvents = new HashSet<string>();
+            _CurrentlyExecutingPropertyChangedEventsLock = new object();
             changeTrackingInterceptor._StatusChanged += (o, e) =>
             {
                 RaisePropertyChanged(o, nameof(IChangeTrackable.ChangeTrackingStatus));
@@ -92,7 +97,7 @@ namespace ChangeTracking
                     {
                         trackable.PropertyChanged -= handler;
                         _PropertyChangedEventHandlers.Remove(propertyName);
-                    } 
+                    }
                 }
             }
         }
@@ -108,7 +113,7 @@ namespace ChangeTracking
                         void newHandler(object sender, PropertyChangedEventArgs e) => RaisePropertyChanged(invocation.Proxy, propertyName);
                         newChild.PropertyChanged += newHandler;
                         _PropertyChangedEventHandlers.Add(propertyName, newHandler);
-                    } 
+                    }
                 }
             }
         }
@@ -148,7 +153,24 @@ namespace ChangeTracking
 
         private void RaisePropertyChanged(object proxy, string propertyName)
         {
-            PropertyChanged(proxy, new PropertyChangedEventArgs(propertyName));
+            lock (_CurrentlyExecutingPropertyChangedEventsLock)
+            {
+                if (!_CurrentlyExecutingPropertyChangedEvents.Add(propertyName))
+                {
+                    return;
+                }
+            }
+            try
+            {
+                PropertyChanged(proxy, new PropertyChangedEventArgs(propertyName));
+            }
+            finally
+            {
+                lock (_CurrentlyExecutingPropertyChangedEventsLock)
+                {
+                    _CurrentlyExecutingPropertyChangedEvents.Remove(propertyName);
+                }
+            }
         }
     }
 }

@@ -3,10 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using ChangeTracking.Internal;
 
 namespace ChangeTracking
 {
-    public class ChangeTrackingProxyGenerationHook : IProxyGenerationHook
+    internal class ChangeTrackingProxyGenerationHook : IProxyGenerationHook
     {
         private static HashSet<string> _MethodsToSkip;
         private readonly Type _Type;

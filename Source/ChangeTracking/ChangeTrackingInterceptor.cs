@@ -1,4 +1,5 @@
 ﻿using Castle.DynamicProxy;
+using ChangeTracking.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -114,11 +115,11 @@ namespace ChangeTracking
                 case "UnDelete":
                     invocation.ReturnValue = UnDelete(invocation.Proxy);
                     break;
-                case "AcceptChanges":
-                    AcceptChanges(invocation.Proxy);
+                case nameof(IChangeTrackableInternal.AcceptChanges):
+                    AcceptChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
-                case "RejectChanges":
-                    RejectChanges(invocation.Proxy);
+                case nameof(IChangeTrackableInternal.RejectChanges):
+                    RejectChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
                 default:
                     invocation.Proceed();
@@ -256,25 +257,41 @@ namespace ChangeTracking
             return false;
         }
 
-        private void AcceptChanges(object proxy)
+        private void AcceptChanges(object proxy, List<object> parents)
         {
             if (_ChangeTrackingStatus == ChangeStatus.Deleted)
             {
                 throw new InvalidOperationException("Can not call AcceptChanges on deleted object");
             }
-            foreach (var child in GetChildren(proxy))
+            parents = parents ?? new List<object>(20) { proxy };
+            foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
-                child.AcceptChanges();
+                if (child is IChangeTrackableInternal childInternal)
+                {
+                    childInternal.AcceptChanges(parents);
+                }
+                else
+                {
+                    child.AcceptChanges();
+                }
             }
             _OriginalValueDictionary.Clear();
             SetAndRaiseStatusChanged(proxy, true);
         }
 
-        private void RejectChanges(object proxy)
+        private void RejectChanges(object proxy, List<object> parents)
         {
-            foreach (var child in GetChildren(proxy))
+            parents = parents ?? new List<object>(20) { proxy };
+            foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
-                child.RejectChanges();
+                if (child is IChangeTrackableInternal childInternal)
+                {
+                    childInternal.RejectChanges(parents);
+                }
+                else
+                {
+                    child.RejectChanges();
+                }
             }
             if (_OriginalValueDictionary.Count > 0)
             {
@@ -288,14 +305,6 @@ namespace ChangeTracking
             }
             SetAndRaiseStatusChanged(proxy, true);
         }
-
-        private static IEnumerable<System.ComponentModel.IRevertibleChangeTracking> GetChildren(object proxy)
-        {
-            return ((ICollectionPropertyTrackable)proxy).CollectionPropertyTrackables
-                .Concat(((IComplexPropertyTrackable)proxy).ComplexPropertyTrackables)
-                .OfType<System.ComponentModel.IRevertibleChangeTracking>();
-        }
-
 
         private void UnsubscribeFromChildStatusChanged(string propertyName, object oldChild)
         {
@@ -354,7 +363,7 @@ namespace ChangeTracking
             }
         }
 
-        private ChangeStatus GetNewChangeStatus(object sender) => _OriginalValueDictionary.Count == 0 && GetChildren(sender).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
+        private ChangeStatus GetNewChangeStatus(object proxy) => _OriginalValueDictionary.Count == 0 && Utils.GetChildren<System.ComponentModel.IChangeTracking>(proxy).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
 
         private IEnumerable<string> GetChangedProperties()
         {
