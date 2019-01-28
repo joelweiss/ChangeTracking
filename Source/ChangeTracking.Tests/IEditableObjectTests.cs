@@ -112,7 +112,7 @@ namespace ChangeTracking.Tests
 
             var trackable = update0.AsTrackable();
 
-            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).BeginEdit()).ShouldNotThrow<OverflowException>();
+            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).BeginEdit()).Should().NotThrow<OverflowException>();
         }
 
         [Fact]
@@ -131,7 +131,7 @@ namespace ChangeTracking.Tests
 
             var trackable = update0.AsTrackable();
 
-            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).CancelEdit()).ShouldNotThrow<OverflowException>();
+            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).CancelEdit()).Should().NotThrow<OverflowException>();
         }
 
         [Fact]
@@ -150,7 +150,7 @@ namespace ChangeTracking.Tests
 
             var trackable = update0.AsTrackable();
 
-            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).EndEdit()).ShouldNotThrow<OverflowException>();
+            trackable.Invoking(t => ((System.ComponentModel.IEditableObject)t).EndEdit()).Should().NotThrow<OverflowException>();
         }
     }
 }

@@ -24,11 +24,11 @@ namespace ChangeTracking.Tests
 
             IList<Order> trackable = orders.AsTrackable();
             INotifyCollectionChanged collection = (INotifyCollectionChanged)trackable;
+            var monitor = collection.Monitor();
 
-            EventMonitor monitor = trackable.MonitorCollectionChangedChanged();
             trackable.Add(new Order());
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(INotifyCollectionChanged.CollectionChanged));
         }
     }
 }

@@ -25,7 +25,7 @@ namespace ChangeTracking.Tests
 
             IList<Order> trackable = orders.AsTrackable();
 
-            trackable.Invoking(o => o.CastToIChangeTrackableCollection()).ShouldNotThrow<InvalidCastException>();
+            trackable.Invoking(o => o.CastToIChangeTrackableCollection()).Should().NotThrow<InvalidCastException>();
         }
 
         [Fact]
@@ -33,7 +33,7 @@ namespace ChangeTracking.Tests
         {
             var orders = Helper.GetOrdersIList();
 
-            orders.Invoking(o => o.CastToIChangeTrackableCollection()).ShouldThrow<InvalidCastException>();
+            orders.Invoking(o => o.CastToIChangeTrackableCollection()).Should().Throw<InvalidCastException>();
         }
 
         [Fact]
@@ -44,7 +44,7 @@ namespace ChangeTracking.Tests
             orders[0] = orders[0].AsTrackable();
             orders[0].CustomerNumber = "Test1";
 
-            orders.Invoking(list => list.AsTrackable()).ShouldThrow<InvalidOperationException>();
+            orders.Invoking(list => list.AsTrackable()).Should().Throw<InvalidOperationException>();
         }
 
         [Fact]
@@ -137,7 +137,7 @@ namespace ChangeTracking.Tests
         {
             var orders = Helper.GetOrdersIList().ToArray();
 
-            orders.Invoking(o => o.AsTrackable()).ShouldThrow<InvalidOperationException>();
+            orders.Invoking(o => o.AsTrackable()).Should().Throw<InvalidOperationException>();
         }
 
         [Fact]
@@ -279,7 +279,7 @@ namespace ChangeTracking.Tests
             orderToMatch.Id = 963;
             orderToMatch.CustomerNumber = "Testing";
 
-            intf.GetOriginal().ShouldBeEquivalentTo(orderToMatch);
+            intf.GetOriginal().Should().BeEquivalentTo(orderToMatch);
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
         }
 
@@ -304,7 +304,7 @@ namespace ChangeTracking.Tests
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
 
-            trackable.Invoking(t => t.FirstOrDefault()).ShouldNotThrow();
+            trackable.Invoking(t => t.FirstOrDefault()).Should().NotThrow();
         }
 
         [Fact]

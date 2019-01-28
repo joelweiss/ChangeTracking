@@ -33,11 +33,11 @@ namespace ChangeTracking.Tests
 
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
+            var monitor = bindingList.Monitor();
 
-            EventMonitor monitor = bindingList.MonitorListChanged();
             bindingList.AddNew();
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(System.ComponentModel.IBindingList.ListChanged));
         }
 
         [Fact]
@@ -47,11 +47,11 @@ namespace ChangeTracking.Tests
 
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
+            var monitor = bindingList.Monitor();
 
-            EventMonitor monitor = bindingList.MonitorListChanged();
             trackable.Remove(trackable[0]);
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(System.ComponentModel.IBindingList.ListChanged));
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace ChangeTracking.Tests
 
             bindingList.Count.Should().Be(withAddedCount - 1, because: "item was canceled");
         }
-        
+
         [Fact]
         public void Change_Property_On_Item_That_Implements_INotifyPropertyChanged_In_Collection_Should_Raise_ListChanged()
         {
@@ -78,12 +78,12 @@ namespace ChangeTracking.Tests
 
             var trackable = orders.AsTrackable();
             var bindingList = (System.ComponentModel.IBindingList)trackable;
+            var monitor = bindingList.Monitor();
 
-            EventMonitor monitor = bindingList.MonitorListChanged();
             ((Order)bindingList[0]).Id = 123;
 
-            monitor.WasRaised.Should().BeTrue();
-        }        
+            monitor.Should().Raise(nameof(System.ComponentModel.IBindingList.ListChanged));
+        }
 
         [Fact]
         public void AcceptChanges_On_Collection_Should_Raise_ListChanged()
@@ -98,12 +98,12 @@ namespace ChangeTracking.Tests
                 ;
             };
             first.Id = 963;
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+            var monitor = bindingList.Monitor();
 
+            trackable.CastToIChangeTrackableCollection().AcceptChanges();
 
-            EventMonitor monitor = trackable.MonitorListChanged();
-            trackable.CastToIChangeTrackableCollection().AcceptChanges();            
-
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(System.ComponentModel.IBindingList.ListChanged));
         }
 
         [Fact]
@@ -111,11 +111,12 @@ namespace ChangeTracking.Tests
         {
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
-
-            EventMonitor monitor = trackable.MonitorListChanged();
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+            var monitor = bindingList.Monitor();
+            
             trackable.CastToIChangeTrackableCollection().AcceptChanges();
 
-            monitor.WasRaised.Should().BeFalse();
+            monitor.Should().NotRaise(nameof(System.ComponentModel.IBindingList.ListChanged));
         }
 
         [Fact]
@@ -126,13 +127,12 @@ namespace ChangeTracking.Tests
 
             var first = trackable.First();
             first.Id = 963;
-
-            EventMonitor monitor = trackable.MonitorListChanged();
-
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+            var monitor = bindingList.Monitor();
 
             trackable.CastToIChangeTrackableCollection().RejectChanges();
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(System.ComponentModel.IBindingList.ListChanged));
         }
 
         [Fact]
@@ -140,11 +140,12 @@ namespace ChangeTracking.Tests
         {
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
+            var bindingList = (System.ComponentModel.IBindingList)trackable;
+            var monitor = bindingList.Monitor();
 
-            EventMonitor monitor = trackable.MonitorListChanged();
             trackable.CastToIChangeTrackableCollection().RejectChanges();
 
-            monitor.WasRaised.Should().BeFalse();
+            monitor.Should().NotRaise(nameof(System.ComponentModel.IBindingList.ListChanged));
         }
     }
 }

@@ -26,7 +26,7 @@ namespace ChangeTracking.Tests
 
             Order trackable = order.AsTrackable();
 
-            trackable.Invoking(o => o.CastToIChangeTrackable()).ShouldNotThrow<InvalidCastException>();
+            trackable.Invoking(o => o.CastToIChangeTrackable()).Should().NotThrow<InvalidCastException>();
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
 
-            order.Invoking(o => o.CastToIChangeTrackable()).ShouldThrow<InvalidCastException>();
+            order.Invoking(o => o.CastToIChangeTrackable()).Should().Throw<InvalidCastException>();
         }
 
         [Fact]
@@ -42,11 +42,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.CustomerNumber = "Test1";
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -54,11 +54,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.CustomerNumber = "Test";
-
-            monitor.WasRaised.Should().BeFalse();
+            
+            monitor.Should().NotRaise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace ChangeTracking.Tests
         {
             var trackable = new Order { Id = 321, CustomerNumber = null }.AsTrackable();
 
-            trackable.Invoking(o => o.CustomerNumber = "Test").ShouldNotThrow<NullReferenceException>();
+            trackable.Invoking(o => o.CustomerNumber = "Test").Should().NotThrow<NullReferenceException>();
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace ChangeTracking.Tests
 
             var original = trackable.CastToIChangeTrackable().GetOriginal();
             var newOne = Helper.GetOrder();
-            original.ShouldBeEquivalentTo(newOne);
+            original.Should().BeEquivalentTo(newOne);
             (original is IChangeTrackable).Should().BeFalse();
         }
 
@@ -146,7 +146,7 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable(ChangeStatus.Deleted);
 
-            trackable.Invoking(o => o.CustomerNumber = "Test1").ShouldThrow<InvalidOperationException>();
+            trackable.Invoking(o => o.CustomerNumber = "Test1").Should().Throw<InvalidOperationException>();
         }
 
         [Fact]
@@ -177,7 +177,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.AcceptChanges();
 
-            intf.ShouldBeEquivalentTo(intf.GetOriginal().AsTrackable());
+            intf.Should().BeEquivalentTo(intf.GetOriginal().AsTrackable());
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
         }
 
@@ -208,7 +208,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.RejectChanges();
 
-            trackable.ShouldBeEquivalentTo(Helper.GetOrder().AsTrackable());
+            trackable.Should().BeEquivalentTo(Helper.GetOrder().AsTrackable());
         }
 
         [Fact]
@@ -222,7 +222,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.AcceptChanges();
 
-            trackable.Address.ShouldBeEquivalentTo(trackable.Address.CastToIChangeTrackable().GetOriginal().AsTrackable());
+            trackable.Address.Should().BeEquivalentTo(trackable.Address.CastToIChangeTrackable().GetOriginal().AsTrackable());
         }
 
         [Fact]
@@ -251,7 +251,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.RejectChanges();
 
-            trackable.Address.ShouldBeEquivalentTo(Helper.GetOrder().AsTrackable().Address);
+            trackable.Address.Should().BeEquivalentTo(Helper.GetOrder().AsTrackable().Address);
         }
 
         [Fact]
@@ -293,7 +293,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.RejectChanges();
 
-            trackable.OrderDetails[0].ShouldBeEquivalentTo(Helper.GetOrder().OrderDetails[0].AsTrackable());
+            trackable.OrderDetails[0].Should().BeEquivalentTo(Helper.GetOrder().OrderDetails[0].AsTrackable());
         }
 
         [Fact]
@@ -338,7 +338,7 @@ namespace ChangeTracking.Tests
             trackable.Address.AddressId = 99;
             Action action = () => { var address = (IChangeTrackable<Address>)trackable.Address; };
 
-            action.ShouldThrow<InvalidCastException>();
+            action.Should().Throw<InvalidCastException>();
         }
 
         [Fact]
@@ -427,7 +427,7 @@ namespace ChangeTracking.Tests
 
             Action action = () => { var details = (IChangeTrackableCollection<OrderDetail>)trackable.OrderDetails; };
 
-            action.ShouldThrow<InvalidCastException>();
+            action.Should().Throw<InvalidCastException>();
         }
 
         [Fact]
@@ -466,11 +466,11 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
             var intf = trackable.CastToIChangeTrackable();
             intf.AcceptChanges();
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -480,11 +480,12 @@ namespace ChangeTracking.Tests
 
             var trackable = order.AsTrackable();
             trackable.Id = 963;
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
             var intf = trackable.CastToIChangeTrackable();
+
             intf.RejectChanges();
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -506,11 +507,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.OrderDetails[0].ItemNo = "Testing";
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -518,11 +519,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable(makeCollectionPropertiesTrackable: false);
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.OrderDetails[0].ItemNo = "Testing";
 
-            monitor.WasRaised.Should().BeFalse();
+            monitor.Should().NotRaise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -530,7 +531,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.OrderDetails.Add(new OrderDetail
             {
@@ -538,7 +539,7 @@ namespace ChangeTracking.Tests
                 ItemNo = "Item123"
             });
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -546,7 +547,7 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable(makeCollectionPropertiesTrackable: false);
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.OrderDetails.Add(new OrderDetail
             {
@@ -554,7 +555,7 @@ namespace ChangeTracking.Tests
                 ItemNo = "Item123"
             });
 
-            monitor.WasRaised.Should().BeFalse();
+            monitor.Should().NotRaise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -562,11 +563,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.Address.City = "Chicago";
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -574,11 +575,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.Address.City = "Chicago";
 
-            monitor.WasRaised.Should().BeFalse();
+            monitor.Should().NotRaise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -588,11 +589,11 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
             trackable.OrderDetails = new List<OrderDetail>();
             trackable.CastToIChangeTrackable().AcceptChanges();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.OrderDetails.Add(new OrderDetail());
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -602,11 +603,11 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable();
             trackable.OrderDetails = new List<OrderDetail> { new OrderDetail() };
             trackable.CastToIChangeTrackable().AcceptChanges();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.OrderDetails[0].OrderDetailId = 123;
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -617,10 +618,10 @@ namespace ChangeTracking.Tests
 
             trackable.Address = new Address();
             trackable.CastToIChangeTrackable().AcceptChanges();
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
             trackable.Address.AddressId = 123;
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -659,7 +660,7 @@ namespace ChangeTracking.Tests
         {
             var trackable = new Order { Id = 321, }.AsTrackable();
 
-            trackable.Invoking(o => o.Address = null).ShouldNotThrow<NullReferenceException>();
+            trackable.Invoking(o => o.Address = null).Should().NotThrow<NullReferenceException>();
         }
 
         [Fact]
@@ -667,7 +668,7 @@ namespace ChangeTracking.Tests
         {
             var trackable = new Order { Id = 321, Address = new Address() }.AsTrackable();
 
-            trackable.Invoking(o => o.Address = null).ShouldNotThrow<NullReferenceException>();
+            trackable.Invoking(o => o.Address = null).Should().NotThrow<NullReferenceException>();
         }
 
         [Fact]
@@ -681,7 +682,7 @@ namespace ChangeTracking.Tests
 
             var current = trackable.CastToIChangeTrackable().GetCurrent();
 
-            current.ShouldBeEquivalentTo(trackable);
+            current.Should().BeEquivalentTo(trackable);
             (current is IChangeTrackable).Should().BeFalse();
         }
 
@@ -691,11 +692,11 @@ namespace ChangeTracking.Tests
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
 
-            EventMonitor monitor = trackable.MonitorStatusChanged();
+            var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.OrderDetails.Insert(0, new OrderDetail());
 
-            monitor.WasRaised.Should().BeTrue();
+            monitor.Should().Raise(nameof(IChangeTrackable.StatusChanged));
         }
 
         [Fact]
@@ -763,7 +764,7 @@ namespace ChangeTracking.Tests
             var trackable = update.AsTrackable();
             trackable.InventoryUpdateId = 3;
 
-            trackable.Invoking(t => t.CastToIChangeTrackable().AcceptChanges()).ShouldNotThrow<OverflowException>();
+            trackable.Invoking(t => t.CastToIChangeTrackable().AcceptChanges()).Should().NotThrow<OverflowException>();
         }
 
         [Fact]
@@ -774,7 +775,7 @@ namespace ChangeTracking.Tests
             var trackable = update.AsTrackable();
             trackable.InventoryUpdateId = 3;
 
-            trackable.Invoking(t => t.CastToIChangeTrackable().RejectChanges()).ShouldNotThrow<OverflowException>();
+            trackable.Invoking(t => t.CastToIChangeTrackable().RejectChanges()).Should().NotThrow<OverflowException>();
         }
 
         [Fact]

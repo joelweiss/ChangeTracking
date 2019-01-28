@@ -14,11 +14,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            var monitor = ((INotifyPropertyChanged)trackable).Monitor();
 
             trackable.NonVirtualModifier();
 
-            trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
+            monitor.Should().RaisePropertyChangeFor(o => ((Order)o).CustomerNumber);
         }
 
         [Fact]
@@ -26,11 +26,11 @@ namespace ChangeTracking.Tests
         {
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            ((INotifyPropertyChanged)trackable).MonitorEvents();
+            var monitor = ((INotifyPropertyChanged)trackable).Monitor();
 
             trackable.VirtualModifier();
 
-            trackable.ShouldRaisePropertyChangeFor(o => o.CustomerNumber);
+            monitor.Should().RaisePropertyChangeFor(o => ((Order)o).CustomerNumber);
         }
 
         [Fact]
