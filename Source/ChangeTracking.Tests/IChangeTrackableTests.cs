@@ -758,18 +758,9 @@ namespace ChangeTracking.Tests
         [Fact]
         public void AcceptChanges_On_Circular_Reference_Should_Not_Throw_OverflowException()
         {
-            var update0 = new InventoryUpdate
-            {
-                InventoryUpdateId = 0
-            };
-            var update1 = new InventoryUpdate
-            {
-                InventoryUpdateId = 1,
-                LinkedToInventoryUpdate = update0
-            };
-            update0.LinkedInventoryUpdate = update1;
+            InventoryUpdate update = GetObjectGraph();
 
-            var trackable = update0.AsTrackable();
+            var trackable = update.AsTrackable();
             trackable.InventoryUpdateId = 3;
 
             trackable.Invoking(t => t.CastToIChangeTrackable().AcceptChanges()).ShouldNotThrow<OverflowException>();
@@ -778,18 +769,9 @@ namespace ChangeTracking.Tests
         [Fact]
         public void RejectChanges_On_Circular_Reference_Should_Not_Throw_OverflowException()
         {
-            var update0 = new InventoryUpdate
-            {
-                InventoryUpdateId = 0
-            };
-            var update1 = new InventoryUpdate
-            {
-                InventoryUpdateId = 1,
-                LinkedToInventoryUpdate = update0
-            };
-            update0.LinkedInventoryUpdate = update1;
+            InventoryUpdate update = GetObjectGraph();
 
-            var trackable = update0.AsTrackable();
+            var trackable = update.AsTrackable();
             trackable.InventoryUpdateId = 3;
 
             trackable.Invoking(t => t.CastToIChangeTrackable().RejectChanges()).ShouldNotThrow<OverflowException>();
@@ -798,21 +780,35 @@ namespace ChangeTracking.Tests
         [Fact]
         public void Circular_Reference_Should_Be_Same_Reference()
         {
+            InventoryUpdate update = GetObjectGraph();
+
+            var trackable = update.AsTrackable();
+
+            trackable.Should().BeSameAs(trackable.LinkedInventoryUpdate.LinkedToInventoryUpdate);
+            trackable.LinkedInventoryUpdate.Should().BeSameAs(trackable.LinkedInventoryUpdate.LinkedToInventoryUpdate.LinkedInventoryUpdate);
+        }
+
+        private static InventoryUpdate GetObjectGraph()
+        {
             var update0 = new InventoryUpdate
             {
-                InventoryUpdateId = 0
+                InventoryUpdateId = 0,
+                UpdateInfos = new List<UpdateInfo>
+                {
+                    new UpdateInfo
+                    {
+                        UpdateInfoId = 1
+                    }
+                }
             };
+            update0.UpdateInfos[0].InventoryUpdate = update0;
             var update1 = new InventoryUpdate
             {
                 InventoryUpdateId = 1,
                 LinkedToInventoryUpdate = update0
             };
             update0.LinkedInventoryUpdate = update1;
-
-            var trackable = update0.AsTrackable();
-
-            trackable.Should().BeSameAs(trackable.LinkedInventoryUpdate.LinkedToInventoryUpdate);
-            trackable.LinkedInventoryUpdate.Should().BeSameAs(trackable.LinkedInventoryUpdate.LinkedToInventoryUpdate.LinkedInventoryUpdate);
+            return update0;
         }
     }
 }

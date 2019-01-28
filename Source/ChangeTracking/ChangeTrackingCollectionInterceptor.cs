@@ -41,30 +41,41 @@ namespace ChangeTracking
             _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable, _Graph);
             _DeletedItems = new List<T>();
         }
-        
+
         public void Intercept(IInvocation invocation)
         {
-            if (_ImplementedMethods.Contains(invocation.Method.Name))
+            switch (invocation.Method.Name)
             {
-                invocation.ReturnValue = invocation.Method.Invoke(this, invocation.Arguments);
-                return;
+                case nameof(IChangeTrackableInternal.AcceptChanges):
+                    AcceptChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
+                    break;
+                case nameof(IChangeTrackableInternal.RejectChanges):
+                    RejectChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
+                    break;
+                default:
+                    if (_ImplementedMethods.Contains(invocation.Method.Name))
+                    {
+                        invocation.ReturnValue = invocation.Method.Invoke(this, invocation.Arguments);
+                        return;
+                    }
+                    if (_BindingListImplementedMethods.Contains(invocation.Method.Name))
+                    {
+                        invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                        return;
+                    }
+                    if (_IBindingListImplementedMethods.Contains(invocation.Method.Name))
+                    {
+                        invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                        return;
+                    }
+                    if (_INotifyCollectionChangedImplementedMethods.Contains(invocation.Method.Name))
+                    {
+                        invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
+                        return;
+                    }
+                    invocation.Proceed();
+                    break;
             }
-            if (_BindingListImplementedMethods.Contains(invocation.Method.Name))
-            {
-                invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
-                return;
-            }
-            if (_IBindingListImplementedMethods.Contains(invocation.Method.Name))
-            {
-                invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
-                return;
-            }
-            if (_INotifyCollectionChangedImplementedMethods.Contains(invocation.Method.Name))
-            {
-                invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
-                return;
-            }
-            invocation.Proceed();
         }
 
         private void DeleteItem(T item)
@@ -104,29 +115,35 @@ namespace ChangeTracking
             return false;
         }
 
-        public void AcceptChanges()
+        public void AcceptChanges() => throw new System.InvalidOperationException("Invalid call you must call the overload with proxy and parents arguments");
+
+        private void AcceptChanges(object proxy, List<object> parents)
         {
-            foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
+            parents = parents ?? new List<object>(20) { proxy };
+            foreach (var item in _WrappedTarget.Cast<IChangeTrackableInternal>())
             {
-                item.AcceptChanges();
-                if (item is System.ComponentModel.IEditableObject editable)
+                item.AcceptChanges(parents);
+                if (item is IEditableObjectInternal editable)
                 {
-                    editable.EndEdit();
+                    editable.EndEdit(parents);
                 }
             }
             _DeletedItems.Clear();
         }
 
-        public void RejectChanges()
+        public void RejectChanges() => throw new System.InvalidOperationException("Invalid call you must call the overload with proxy and parents arguments");
+
+        private void RejectChanges(object proxy, List<object> parents)
         {
             AddedItems.ToList().ForEach(i => _WrappedTarget.Remove(i));
-            foreach (var item in _WrappedTarget.Cast<IChangeTrackable<T>>())
+            parents = parents ?? new List<object>(20) { proxy };
+            foreach (var item in _WrappedTarget.Cast<IChangeTrackableInternal>())
             {
-                item.RejectChanges();
+                item.RejectChanges(parents);
             }
             foreach (var item in _DeletedItems)
             {
-                ((System.ComponentModel.IRevertibleChangeTracking)item).RejectChanges();
+                ((IChangeTrackableInternal)item).RejectChanges(parents);
                 _WrappedTarget.Add(item);
             }
             _DeletedItems.Clear();
