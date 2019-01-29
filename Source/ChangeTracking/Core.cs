@@ -74,24 +74,24 @@ namespace ChangeTracking
 
         internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph)
         {
-            ProxyTargetMap existing = graph.GetExistingProxyForTarget(target);
+            ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
             if (existing != null)
             {
                 return existing.Proxy;
             }
             Type genericArgument = type.GetGenericArguments().First();
             object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<>).MakeGenericType(genericArgument),
-                        new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) },
+                        new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IRevertibleChangeTrackingInternal), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) },
                         target,
                         GetOptions(genericArgument),
                         (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
-            graph.Add(new ProxyTargetMap(target, proxy));
+            graph.Add(new ProxyWeakTargetMap(target, proxy));
             return proxy;
         }
 
         internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Internal.Graph graph)
         {
-            Internal.ProxyTargetMap existing = graph.GetExistingProxyForTarget(target);
+            Internal.ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
             if (existing != null)
             {
                 return existing.Proxy;
@@ -102,7 +102,7 @@ namespace ChangeTracking
             var complexPropertyInterceptor = CreateInstance(typeof(ComplexPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
             var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(type,
-                         new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
+                         new[] { typeof(IChangeTrackableInternal), typeof(IRevertibleChangeTrackingInternal), typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
                          target,
                          GetOptions(type),
                          (IInterceptor)notifyPropertyChangedInterceptor,
@@ -116,7 +116,7 @@ namespace ChangeTracking
             ((IInterceptorSettings)editableObjectInterceptor).IsInitialized = true;
             ((IInterceptorSettings)complexPropertyInterceptor).IsInitialized = true;
             ((IInterceptorSettings)collectionPropertyInterceptor).IsInitialized = true;
-            graph.Add(new ProxyTargetMap(target, proxy));
+            graph.Add(new ProxyWeakTargetMap(target, proxy));
             return proxy;
         }
 
@@ -134,7 +134,7 @@ namespace ChangeTracking
 
         internal static T AsTrackable<T>(this T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph) where T : class
         {
-            Internal.ProxyTargetMap existing = graph.GetExistingProxyForTarget(target);
+            Internal.ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
             if (existing != null)
             {
                 return (T)existing.Proxy;
@@ -152,7 +152,7 @@ namespace ChangeTracking
             var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
             var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
-                new[] { typeof(IChangeTrackableInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
+                new[] { typeof(IChangeTrackableInternal), typeof(IRevertibleChangeTrackingInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
                 target,
                 GetOptions(typeof(T)),
                 notifyPropertyChangedInterceptor,
@@ -166,7 +166,7 @@ namespace ChangeTracking
             editableObjectInterceptor.IsInitialized = true;
             complexPropertyInterceptor.IsInitialized = true;
             collectionPropertyInterceptor.IsInitialized = true;
-            graph.Add(new ProxyTargetMap(target, proxy));
+            graph.Add(new ProxyWeakTargetMap(target, proxy));
             return (T)proxy;
         }
 
@@ -217,10 +217,10 @@ namespace ChangeTracking
                 throw new InvalidOperationException("some items in the collection are already being tracked");
             }
 
-            Internal.Graph graph = new Internal.Graph();
+            Graph graph = new Graph();
             object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<T>),
-                new[] { typeof(IChangeTrackableCollection<T>), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, GetOptions(typeof(T)), new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
-            graph.Add(new ProxyTargetMap(target, proxy));
+                new[] { typeof(IChangeTrackableCollection<T>), typeof(IRevertibleChangeTrackingInternal), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, GetOptions(typeof(T)), new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
+            graph.Add(new ProxyWeakTargetMap(target, proxy));
             return (IList<T>)proxy;
         }
     }

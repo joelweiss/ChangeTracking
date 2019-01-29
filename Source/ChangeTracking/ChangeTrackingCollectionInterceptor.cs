@@ -46,10 +46,10 @@ namespace ChangeTracking
         {
             switch (invocation.Method.Name)
             {
-                case nameof(IChangeTrackableInternal.AcceptChanges):
+                case nameof(IRevertibleChangeTrackingInternal.AcceptChanges):
                     AcceptChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
-                case nameof(IChangeTrackableInternal.RejectChanges):
+                case nameof(IRevertibleChangeTrackingInternal.RejectChanges):
                     RejectChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
                 default:
@@ -120,7 +120,7 @@ namespace ChangeTracking
         private void AcceptChanges(object proxy, List<object> parents)
         {
             parents = parents ?? new List<object>(20) { proxy };
-            foreach (var item in _WrappedTarget.Cast<IChangeTrackableInternal>())
+            foreach (var item in _WrappedTarget.Cast<IRevertibleChangeTrackingInternal>())
             {
                 item.AcceptChanges(parents);
                 if (item is IEditableObjectInternal editable)
@@ -137,13 +137,13 @@ namespace ChangeTracking
         {
             AddedItems.ToList().ForEach(i => _WrappedTarget.Remove(i));
             parents = parents ?? new List<object>(20) { proxy };
-            foreach (var item in _WrappedTarget.Cast<IChangeTrackableInternal>())
+            foreach (var item in _WrappedTarget.Cast<IRevertibleChangeTrackingInternal>())
             {
                 item.RejectChanges(parents);
             }
             foreach (var item in _DeletedItems)
             {
-                ((IChangeTrackableInternal)item).RejectChanges(parents);
+                ((IRevertibleChangeTrackingInternal)item).RejectChanges(parents);
                 _WrappedTarget.Add(item);
             }
             _DeletedItems.Clear();

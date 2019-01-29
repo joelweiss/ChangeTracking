@@ -61,12 +61,12 @@ namespace ChangeTracking
                 if (noOriginalValueFound && !Equals(originalValue, newValue))
                 {
                     _OriginalValueDictionary.Add(propertyName, originalValue);
-                    SetAndRaiseStatusChanged(invocation.Proxy, false);
+                    SetAndRaiseStatusChanged(invocation.Proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
                 }
                 else if (!noOriginalValueFound && Equals(originalValue, newValue))
                 {
                     _OriginalValueDictionary.Remove(propertyName);
-                    SetAndRaiseStatusChanged(invocation.Proxy, false);
+                    SetAndRaiseStatusChanged(invocation.Proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
                 }
                 return;
             }
@@ -98,10 +98,33 @@ namespace ChangeTracking
                     invocation.ReturnValue = ((dynamic)this).GetOriginalValue((T)invocation.Proxy, (dynamic)invocation.Arguments[0]);
                     break;
                 case nameof(IChangeTrackable<object>.GetOriginal):
-                    invocation.ReturnValue = GetOriginal((T)invocation.Proxy);
-                    break;
                 case nameof(IChangeTrackable<object>.GetCurrent):
-                    invocation.ReturnValue = GetCurrent((T)invocation.Proxy);
+                    object poco;
+                    Func<PropertyInfo, object, object> getPropertyProxy;
+                    Func<IChangeTrackableInternal, UnrollGraph, object> getPropertyPoco;
+                    if (invocation.Method.Name == nameof(IChangeTrackable<object>.GetOriginal))
+                    {
+                        getPropertyProxy = (property, proxy) => _OriginalValueDictionary.TryGetValue(property.Name, out object value) ? value : property.GetValue(proxy, null);
+                        getPropertyPoco = (proxy, g) => proxy.GetOriginal(g);
+                    }
+                    else
+                    {
+                        getPropertyProxy = (property, proxy) => property.GetValue(proxy, null);
+                        getPropertyPoco = (proxy, g) => proxy.GetCurrent(g);
+                    }
+
+                    bool isRootCall = invocation.Arguments.Length == 0;
+                    if (isRootCall)
+                    {
+                        UnrollGraph unrollGraph = new UnrollGraph();
+                        poco = GetPoco((T)invocation.Proxy, unrollGraph, getPropertyProxy, getPropertyPoco);
+                        unrollGraph.FinishWireUp();
+                    }
+                    else
+                    {
+                        poco = GetPoco((T)invocation.Proxy, (UnrollGraph)invocation.Arguments[0], getPropertyProxy, getPropertyPoco);
+                    }
+                    invocation.ReturnValue = poco;
                     break;
                 case "add_StatusChanged":
                     _StatusChanged += (EventHandler)invocation.Arguments[0];
@@ -115,10 +138,10 @@ namespace ChangeTracking
                 case "UnDelete":
                     invocation.ReturnValue = UnDelete(invocation.Proxy);
                     break;
-                case nameof(IChangeTrackableInternal.AcceptChanges):
+                case nameof(IRevertibleChangeTrackingInternal.AcceptChanges):
                     AcceptChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
-                case nameof(IChangeTrackableInternal.RejectChanges):
+                case nameof(IRevertibleChangeTrackingInternal.RejectChanges):
                     RejectChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
                     break;
                 default:
@@ -153,7 +176,9 @@ namespace ChangeTracking
                 selector.Compile()(target);
             if (originalValue is IChangeTrackableInternal trackable)
             {
-                originalValue = (TResult)trackable.GetOriginal();
+                UnrollGraph unrollGraph = new UnrollGraph();
+                originalValue = (TResult)trackable.GetOriginal(unrollGraph);
+                unrollGraph.FinishWireUp();
             }
             return originalValue;
         }
@@ -180,60 +205,59 @@ namespace ChangeTracking
             return propInfo;
         }
 
-        private T GetOriginal(T proxy)
+        private T GetPoco(T proxy, UnrollGraph unrollGraph, Func<PropertyInfo, object, object> getPropertyProxy, Func<IChangeTrackableInternal, UnrollGraph, object> getPropertyPoco)
         {
             var original = Activator.CreateInstance<T>();
             foreach (var property in _Properties.Values)
             {
-                object originalValue = _OriginalValueDictionary.TryGetValue(property.Name, out object value) ? value : property.GetValue(proxy, null);
-                if (originalValue != null)
+                object oldPropertyProxyValue = getPropertyProxy(property, proxy);
+                if (oldPropertyProxyValue != null)
                 {
-                    if (originalValue is IChangeTrackableInternal trackable)
+                    if (oldPropertyProxyValue is IChangeTrackableInternal trackable)
                     {
-                        originalValue = trackable.GetOriginal();
-                    }
-                    else if (originalValue.GetType().GetInterface("IChangeTrackableCollection`1") != null)
-                    {
-                        IEnumerable<object> originalValues = ((System.Collections.IEnumerable)originalValue).Cast<IChangeTrackableInternal>().Select(v => v.GetOriginal());
-                        var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments().First()));
-                        foreach (var item in originalValues)
+                        if (unrollGraph.RegisterOrScheduleAssignPocoInsteadOfProxy(trackable, pocoValue => property.SetValue(original, pocoValue, null)))
                         {
-                            list.Add(item);
+                            object newPropertyValue;
+                            newPropertyValue = getPropertyPoco(trackable, unrollGraph);
+                            unrollGraph.AddMap(new ProxyTargetMap(newPropertyValue, trackable));
+                            property.SetValue(original, newPropertyValue, null);
                         }
-                        originalValue = list;
+                    }
+                    else if (oldPropertyProxyValue.GetType().GetInterface("IChangeTrackableCollection`1") != null)
+                    {
+                        if (unrollGraph.RegisterOrScheduleAssignPocoInsteadOfProxy(oldPropertyProxyValue, pocoValue => property.SetValue(original, pocoValue, null)))
+                        {
+                            System.Collections.IEnumerable originalPropertyValueEnumerable = (System.Collections.IEnumerable)oldPropertyProxyValue;
+                            int listCount = originalPropertyValueEnumerable is IEnumerable<object> e ? e.Count() : originalPropertyValueEnumerable.Cast<object>().Count();
+                            var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments().First()), listCount);
+
+                            foreach (var proxyListItem in originalPropertyValueEnumerable)
+                            {
+                                if (unrollGraph.RegisterOrScheduleAssignPocoInsteadOfProxy(proxyListItem, pocoSetter: null))
+                                {
+                                    object listItem = getPropertyPoco((IChangeTrackableInternal)proxyListItem, unrollGraph);
+                                    unrollGraph.AddMap(new ProxyTargetMap(listItem, proxyListItem));
+                                }
+                            }
+
+                            unrollGraph.AddListSetter(map =>
+                            {
+                                foreach (var proxyListItem in originalPropertyValueEnumerable)
+                                {
+                                    list.Add(map(proxyListItem));
+                                }
+                            });
+                            unrollGraph.AddMap(new ProxyTargetMap(list, oldPropertyProxyValue));
+                            property.SetValue(original, list, null);
+                        }
+                    }
+                    else
+                    {
+                        property.SetValue(original, oldPropertyProxyValue, null);
                     }
                 }
-                property.SetValue(original, originalValue, null);
             }
             return original;
-        }
-
-        private T GetCurrent(T proxy)
-        {
-            var current = Activator.CreateInstance<T>();
-            foreach (var property in _Properties.Values)
-            {
-                object currentValue = property.GetValue(proxy, null);
-                if (currentValue != null)
-                {
-                    if (currentValue is IChangeTrackableInternal trackable)
-                    {
-                        currentValue = trackable.GetCurrent();
-                    }
-                    else if (currentValue.GetType().GetInterface("IChangeTrackableCollection`1") != null)
-                    {
-                        IEnumerable<object> originalValues = ((System.Collections.IEnumerable)currentValue).Cast<IChangeTrackableInternal>().Select(v => v.GetCurrent());
-                        var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(property.PropertyType.GetGenericArguments().First()));
-                        foreach (var item in originalValues)
-                        {
-                            list.Add(item);
-                        }
-                        currentValue = list;
-                    }
-                }
-                property.SetValue(current, currentValue, null);
-            }
-            return current;
         }
 
         private bool Delete(object proxy)
@@ -251,7 +275,7 @@ namespace ChangeTracking
         {
             if (_ChangeTrackingStatus == ChangeStatus.Deleted)
             {
-                SetAndRaiseStatusChanged(proxy, true);
+                SetAndRaiseStatusChanged(proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: true);
                 return true;
             }
             return false;
@@ -266,7 +290,7 @@ namespace ChangeTracking
             parents = parents ?? new List<object>(20) { proxy };
             foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
-                if (child is IChangeTrackableInternal childInternal)
+                if (child is IRevertibleChangeTrackingInternal childInternal)
                 {
                     childInternal.AcceptChanges(parents);
                 }
@@ -276,7 +300,7 @@ namespace ChangeTracking
                 }
             }
             _OriginalValueDictionary.Clear();
-            SetAndRaiseStatusChanged(proxy, true);
+            SetAndRaiseStatusChanged(proxy, parents, setStatusEvenIfStatsAddedOrDeleted: true);
         }
 
         private void RejectChanges(object proxy, List<object> parents)
@@ -284,7 +308,7 @@ namespace ChangeTracking
             parents = parents ?? new List<object>(20) { proxy };
             foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
-                if (child is IChangeTrackableInternal childInternal)
+                if (child is IRevertibleChangeTrackingInternal childInternal)
                 {
                     childInternal.RejectChanges(parents);
                 }
@@ -303,7 +327,7 @@ namespace ChangeTracking
                 _OriginalValueDictionary.Clear();
                 _InRejectChanges = false;
             }
-            SetAndRaiseStatusChanged(proxy, true);
+            SetAndRaiseStatusChanged(proxy, parents, setStatusEvenIfStatsAddedOrDeleted: true);
         }
 
         private void UnsubscribeFromChildStatusChanged(string propertyName, object oldChild)
@@ -335,14 +359,14 @@ namespace ChangeTracking
                 {
                     if (newValue is IChangeTrackable newChild)
                     {
-                        EventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
+                        EventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
                         newChild.StatusChanged += newHandler;
                         _StatusChangedEventHandlers.Add(propertyName, newHandler);
                         return;
                     }
                     if (newValue is System.ComponentModel.IBindingList newCollectionChild)
                     {
-                        System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, false);
+                        System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
                         newCollectionChild.ListChanged += newHandler;
                         _StatusChangedEventHandlers.Add(propertyName, newHandler);
                     }
@@ -350,11 +374,11 @@ namespace ChangeTracking
             }
         }
 
-        private void SetAndRaiseStatusChanged(object proxy, bool setStatusEvenIfStatsAddedOrDeleted)
+        private void SetAndRaiseStatusChanged(object proxy, List<object> parents, bool setStatusEvenIfStatsAddedOrDeleted)
         {
             if (_ChangeTrackingStatus == ChangeStatus.Changed || _ChangeTrackingStatus == ChangeStatus.Unchanged || setStatusEvenIfStatsAddedOrDeleted)
             {
-                var newChangeStatus = GetNewChangeStatus(proxy);
+                var newChangeStatus = GetNewChangeStatus(proxy, parents);
                 if (_ChangeTrackingStatus != newChangeStatus)
                 {
                     _ChangeTrackingStatus = newChangeStatus;
@@ -363,7 +387,7 @@ namespace ChangeTracking
             }
         }
 
-        private ChangeStatus GetNewChangeStatus(object proxy) => _OriginalValueDictionary.Count == 0 && Utils.GetChildren<System.ComponentModel.IChangeTracking>(proxy).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
+        private ChangeStatus GetNewChangeStatus(object proxy, List<object> parents) => _OriginalValueDictionary.Count == 0 && Utils.GetChildren<System.ComponentModel.IChangeTracking>(proxy, parents).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
 
         private IEnumerable<string> GetChangedProperties()
         {

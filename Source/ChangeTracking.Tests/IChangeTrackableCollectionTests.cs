@@ -278,8 +278,9 @@ namespace ChangeTracking.Tests
             var orderToMatch = Helper.GetOrder();
             orderToMatch.Id = 963;
             orderToMatch.CustomerNumber = "Testing";
+            Order originalOrder = intf.GetOriginal();
 
-            intf.GetOriginal().Should().BeEquivalentTo(orderToMatch);
+            originalOrder.Should().BeEquivalentTo(orderToMatch, options => options.IgnoringCyclicReferences());
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
         }
 

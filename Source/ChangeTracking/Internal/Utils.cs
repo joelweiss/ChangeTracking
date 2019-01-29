@@ -5,7 +5,7 @@ namespace ChangeTracking.Internal
 {
     internal static class Utils
     {
-        internal static IEnumerable<TResult> GetChildren<TResult>(object proxy, List<object> parents = null)
+        internal static IEnumerable<TResult> GetChildren<TResult>(object proxy, List<object> parents)
         {
             IEnumerable<object> children = ((ICollectionPropertyTrackable)proxy).CollectionPropertyTrackables
                 .Concat(((IComplexPropertyTrackable)proxy).ComplexPropertyTrackables);

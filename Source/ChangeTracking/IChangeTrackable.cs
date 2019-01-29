@@ -56,12 +56,4 @@ namespace ChangeTracking
         ChangeStatus ChangeTrackingStatus { get; }
         IEnumerable<string> ChangedProperties { get; }
     }
-
-    internal interface IChangeTrackableInternal
-    {
-        object GetOriginal();
-        object GetCurrent();
-        void AcceptChanges(List<object> parents);
-        void RejectChanges(List<object> parents);
-    }
 }

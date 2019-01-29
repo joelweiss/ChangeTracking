@@ -16,7 +16,8 @@ namespace ChangeTracking.Tests
         public virtual IList<OrderDetail> OrderDetails { get; set; }
         public virtual int OrderDetailsCount => OrderDetails != null ? OrderDetails.Count : 0;
         public virtual OrderDetail OrderDetail => OrderDetails?.FirstOrDefault(od => od.OrderDetailId == Id);
-
+        public virtual Order LinkedToOrder { get; set; }
+        public virtual Order LinkedOrder { get; set; }
 
         public Order CreateOrder()
         {

@@ -114,7 +114,7 @@ namespace ChangeTracking.Tests
 
             var original = trackable.CastToIChangeTrackable().GetOriginal();
             var newOne = Helper.GetOrder();
-            original.Should().BeEquivalentTo(newOne);
+            original.Should().BeEquivalentTo(newOne, options => options.IgnoringCyclicReferences());
             (original is IChangeTrackable).Should().BeFalse();
         }
 
@@ -177,7 +177,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.AcceptChanges();
 
-            intf.Should().BeEquivalentTo(intf.GetOriginal().AsTrackable());
+            intf.Should().BeEquivalentTo(intf.GetOriginal().AsTrackable(), options => options.IgnoringCyclicReferences());
             intf.GetOriginalValue(o => o.Id).Should().Be(963);
         }
 
@@ -208,7 +208,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.RejectChanges();
 
-            trackable.Should().BeEquivalentTo(Helper.GetOrder().AsTrackable());
+            trackable.Should().BeEquivalentTo(Helper.GetOrder().AsTrackable(), options => options.IgnoringCyclicReferences());
         }
 
         [Fact]
@@ -293,7 +293,7 @@ namespace ChangeTracking.Tests
             var intf = trackable.CastToIChangeTrackable();
             intf.RejectChanges();
 
-            trackable.OrderDetails[0].Should().BeEquivalentTo(Helper.GetOrder().OrderDetails[0].AsTrackable());
+            trackable.OrderDetails[0].Should().BeEquivalentTo(Helper.GetOrder().OrderDetails[0].AsTrackable(), options => options.IgnoringCyclicReferences());
         }
 
         [Fact]
@@ -634,8 +634,6 @@ namespace ChangeTracking.Tests
             trackable.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
         }
 
-
-
         [Fact]
         public void When_Nothing_Is_Changed_ChangedProperties_Should_BeEmpty()
         {
@@ -682,7 +680,7 @@ namespace ChangeTracking.Tests
 
             var current = trackable.CastToIChangeTrackable().GetCurrent();
 
-            current.Should().BeEquivalentTo(trackable);
+            current.Should().BeEquivalentTo(trackable, options => options.IgnoringCyclicReferences());
             (current is IChangeTrackable).Should().BeFalse();
         }
 

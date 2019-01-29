@@ -5,11 +5,12 @@ namespace ChangeTracking.Tests
 {
     internal static class Helper
     {
-        internal static Order GetOrder()
+        internal static Order GetOrder(int? orderId = null)
         {
-            return new Order
+            int id = orderId ?? 1;
+            Order order = new Order
             {
-                Id = 1,
+                Id = id,
                 CustomerNumber = "Test",
                 Address = new Address
                 {
@@ -30,16 +31,20 @@ namespace ChangeTracking.Tests
                     }
                 }
             };
+            Order linkedOrder = new Order
+            {
+                Id = id + 1000,
+                LinkedToOrder = order
+            };
+            order.LinkedOrder = linkedOrder;
+
+            foreach (OrderDetail orderDetail in order.OrderDetails)
+            {
+                orderDetail.Order = order;
+            }
+            return order;
         }
 
-        internal static IList<Order> GetOrdersIList()
-        {
-            return Enumerable.Range(0, 10).Select(i =>
-            {
-                var order = GetOrder();
-                order.Id = i;
-                return order;
-            }).ToList();
-        }
+        internal static IList<Order> GetOrdersIList() => Enumerable.Range(1, 10).Select(i => GetOrder(i)).ToList();
     }
 }
