@@ -73,6 +73,11 @@ namespace ChangeTracking
                         invocation.ReturnValue = invocation.Method.Invoke(_WrappedTarget, invocation.Arguments);
                         return;
                     }
+                    if (invocation.Method.Name == nameof(IRevertibleChangeTrackingInternal.IsChanged))
+                    {
+                        invocation.ReturnValue = IsChanged;
+                        return;
+                    }
                     invocation.Proceed();
                     break;
             }

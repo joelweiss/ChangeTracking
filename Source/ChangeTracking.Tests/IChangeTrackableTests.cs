@@ -809,5 +809,20 @@ namespace ChangeTracking.Tests
             update0.LinkedInventoryUpdate = update1;
             return update0;
         }
+
+        [Fact]
+        public void When_Changed_Back_Should_Be_Unchanged()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            trackable.Id++;
+            trackable.Id--;
+            trackable.LinkedOrder.Id++;
+            trackable.LinkedOrder.Id--;
+
+            trackable.CastToIChangeTrackable().IsChanged.Should().BeFalse();
+            trackable.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
+        }
     }
 }

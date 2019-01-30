@@ -61,12 +61,12 @@ namespace ChangeTracking
                 if (noOriginalValueFound && !Equals(originalValue, newValue))
                 {
                     _OriginalValueDictionary.Add(propertyName, originalValue);
-                    SetAndRaiseStatusChanged(invocation.Proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
+                    SetAndRaiseStatusChanged(invocation.Proxy, parents: new List<object> { invocation.Proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
                 }
                 else if (!noOriginalValueFound && Equals(originalValue, newValue))
                 {
                     _OriginalValueDictionary.Remove(propertyName);
-                    SetAndRaiseStatusChanged(invocation.Proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
+                    SetAndRaiseStatusChanged(invocation.Proxy, parents: new List<object> { invocation.Proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
                 }
                 return;
             }
@@ -143,6 +143,9 @@ namespace ChangeTracking
                     break;
                 case nameof(IRevertibleChangeTrackingInternal.RejectChanges):
                     RejectChanges(invocation.Proxy, invocation.Arguments.Length == 0 ? null : (List<object>)invocation.Arguments[0]);
+                    break;
+                case nameof(IRevertibleChangeTrackingInternal.IsChanged):
+                    invocation.ReturnValue = GetNewChangeStatus(invocation.Proxy, (List<object>)invocation.Arguments[0]) != ChangeStatus.Unchanged;
                     break;
                 default:
                     invocation.Proceed();
@@ -275,7 +278,7 @@ namespace ChangeTracking
         {
             if (_ChangeTrackingStatus == ChangeStatus.Deleted)
             {
-                SetAndRaiseStatusChanged(proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: true);
+                SetAndRaiseStatusChanged(proxy, parents: new List<object> { proxy }, setStatusEvenIfStatsAddedOrDeleted: true);
                 return true;
             }
             return false;
@@ -359,14 +362,14 @@ namespace ChangeTracking
                 {
                     if (newValue is IChangeTrackable newChild)
                     {
-                        EventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
+                        EventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: new List<object> { proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
                         newChild.StatusChanged += newHandler;
                         _StatusChangedEventHandlers.Add(propertyName, newHandler);
                         return;
                     }
                     if (newValue is System.ComponentModel.IBindingList newCollectionChild)
                     {
-                        System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: null, setStatusEvenIfStatsAddedOrDeleted: false);
+                        System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: new List<object> { proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
                         newCollectionChild.ListChanged += newHandler;
                         _StatusChangedEventHandlers.Add(propertyName, newHandler);
                     }
@@ -387,7 +390,7 @@ namespace ChangeTracking
             }
         }
 
-        private ChangeStatus GetNewChangeStatus(object proxy, List<object> parents) => _OriginalValueDictionary.Count == 0 && Utils.GetChildren<System.ComponentModel.IChangeTracking>(proxy, parents).All(c => !c.IsChanged) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
+        private ChangeStatus GetNewChangeStatus(object proxy, List<object> parents) => _OriginalValueDictionary.Count == 0 && Utils.GetChildren<IRevertibleChangeTrackingInternal>(proxy, parents).All(c => !c.IsChanged(parents)) ? ChangeStatus.Unchanged : ChangeStatus.Changed;
 
         private IEnumerable<string> GetChangedProperties()
         {

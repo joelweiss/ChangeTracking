@@ -6,5 +6,6 @@ namespace ChangeTracking.Internal
     {
         void AcceptChanges(List<object> parents);
         void RejectChanges(List<object> parents);
+        bool IsChanged(List<object> parents);
     }
 }
