@@ -824,5 +824,43 @@ namespace ChangeTracking.Tests
             trackable.CastToIChangeTrackable().IsChanged.Should().BeFalse();
             trackable.CastToIChangeTrackable().ChangeTrackingStatus.Should().Be(ChangeStatus.Unchanged);
         }
+
+        [Fact]
+        public void Call_AsTrackable_On_Trackable_Should_Throw_InvalidOperationException()
+        {
+            IList<Order> orders = Helper.GetOrdersIList();
+            IList<Order> trackable = orders.AsTrackable();
+
+            trackable.Invoking(t => t.AsTrackable()).Should().Throw<InvalidOperationException>();
+        }
+
+        public class Phone
+        {
+            public virtual CallerId CallerId { get; set; }
+            public virtual CallerId TheCallerId => CallerId;
+        }
+
+        public class CallerId
+        {
+            public virtual string Name { get; set; }
+        }
+
+        [Fact]
+        public void ReadOnly_Property_Should_Not_Be_Intercepted()
+        {
+            Phone phone = new Phone
+            {
+                CallerId = new CallerId
+                {
+                    Name = "Caller"
+                }
+            };
+            Phone trackable = phone.AsTrackable();
+
+            trackable.TheCallerId.Name = "ChangedCaller";
+
+            trackable.CallerId.CastToIChangeTrackable().IsChanged.Should().BeTrue();
+            trackable.TheCallerId.Should().BeSameAs(trackable.CallerId);
+        }
     }
 }

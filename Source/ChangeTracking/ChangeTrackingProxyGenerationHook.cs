@@ -11,7 +11,7 @@ namespace ChangeTracking
     {
         private static HashSet<string> _MethodsToSkip;
         private readonly Type _Type;
-        private HashSet<MethodInfo> _InstanceMethodsOnClass;
+        private HashSet<MethodInfo> _InstanceMethodsToSkip;
 
         static ChangeTrackingProxyGenerationHook()
         {
@@ -21,9 +21,10 @@ namespace ChangeTracking
         public ChangeTrackingProxyGenerationHook(Type type)
         {
             _Type = type;
-            _InstanceMethodsOnClass = new HashSet<MethodInfo>(type
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Where(mi => !mi.IsSpecialName));
+            const BindingFlags BindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            _InstanceMethodsToSkip = new HashSet<MethodInfo>(type
+                .GetMethods(BindingFlags)
+                .Where(mi => !mi.IsSpecialName || (mi.IsProperty() && !type.GetProperty(mi.PropertyName(), BindingFlags).CanWrite)));
         }
 
         public void MethodsInspected() { }
@@ -36,7 +37,7 @@ namespace ChangeTracking
             }
         }
 
-        public bool ShouldInterceptMethod(Type type, System.Reflection.MethodInfo methodInfo) => !_MethodsToSkip.Contains(methodInfo.Name) && !_InstanceMethodsOnClass.Contains(methodInfo);
+        public bool ShouldInterceptMethod(Type type, System.Reflection.MethodInfo methodInfo) => !_MethodsToSkip.Contains(methodInfo.Name) && !_InstanceMethodsToSkip.Contains(methodInfo);
 
         public override bool Equals(object obj) => (obj as ChangeTrackingProxyGenerationHook)?._Type == _Type;
 
