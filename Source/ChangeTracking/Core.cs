@@ -74,6 +74,7 @@ namespace ChangeTracking
 
         internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph)
         {
+            ThrowIfTargetIsProxy(target);
             ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
             if (existing != null)
             {
@@ -89,9 +90,18 @@ namespace ChangeTracking
             return proxy;
         }
 
+        private static void ThrowIfTargetIsProxy(object target)
+        {
+            if (target is IRevertibleChangeTrackingInternal)
+            {
+                throw new InvalidOperationException("The target is already a Trackable Proxy");
+            }
+        }
+
         internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Internal.Graph graph)
         {
-            Internal.ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
+            ThrowIfTargetIsProxy(target);
+            ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
             if (existing != null)
             {
                 return existing.Proxy;
@@ -134,7 +144,8 @@ namespace ChangeTracking
 
         internal static T AsTrackable<T>(this T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph) where T : class
         {
-            Internal.ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
+            ThrowIfTargetIsProxy(target);
+            ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
             if (existing != null)
             {
                 return (T)existing.Proxy;
@@ -212,6 +223,7 @@ namespace ChangeTracking
 
         public static IList<T> AsTrackable<T>(this IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
         {
+            ThrowIfTargetIsProxy(target);
             if (target.OfType<IChangeTrackable<T>>().Any(ct => ct.ChangeTrackingStatus != ChangeStatus.Unchanged))
             {
                 throw new InvalidOperationException("some items in the collection are already being tracked");

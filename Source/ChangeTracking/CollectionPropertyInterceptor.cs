@@ -92,7 +92,7 @@ namespace ChangeTracking
                         {
                             newValue = null;
                         }
-                        else if (childTarget.GetType().GetInterfaces().FirstOrDefault(t => t == typeof(IChangeTrackableCollection<>)) != null)
+                        else if (childTarget is IProxyTargetAccessor && childTarget.GetType().GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IChangeTrackableCollection<>)) != null)
                         {
                             newValue = invocation.Arguments[0];
                         }
