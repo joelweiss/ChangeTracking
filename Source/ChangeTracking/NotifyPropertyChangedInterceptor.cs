@@ -72,6 +72,7 @@ namespace ChangeTracking
                 string propertyName = invocation.Method.PropertyName();
                 SubscribeToChildPropertyChanged(invocation, propertyName, invocation.ReturnValue);
                 SubscribeToChildListChanged(invocation, propertyName, invocation.ReturnValue);
+                return;
             }
             switch (invocation.Method.Name)
             {
