@@ -57,7 +57,7 @@ namespace ChangeTracking.Tests
             var monitor = ((IChangeTrackable)trackable).Monitor();
 
             trackable.CustomerNumber = "Test";
-            
+
             monitor.Should().NotRaise(nameof(IChangeTrackable.StatusChanged));
         }
 
@@ -861,6 +861,84 @@ namespace ChangeTracking.Tests
 
             trackable.CallerId.CastToIChangeTrackable().IsChanged.Should().BeTrue();
             trackable.TheCallerId.Should().BeSameAs(trackable.CallerId);
+        }
+
+        [Fact]
+        public void When_Setting_All_Back_Status_IsChanged_Should_Be_False()
+        {
+            var update0 = new InventoryUpdate
+            {
+                InventoryUpdateId = 0
+            };
+
+            var update1 = new InventoryUpdate
+            {
+                InventoryUpdateId = 1,
+                LinkedToInventoryUpdateId = update0.InventoryUpdateId,
+                LinkedToInventoryUpdate = update0
+            };
+            update0.LinkedInventoryUpdate = update1;
+
+            var update3 = new InventoryUpdate
+            {
+                InventoryUpdateId = 3,
+                LinkedToInventoryUpdateId = update1.InventoryUpdateId,
+                LinkedToInventoryUpdate = update1
+            };
+            update1.LinkedInventoryUpdate = update3;
+
+            var update2 = new InventoryUpdate
+            {
+                InventoryUpdateId = 2
+            };
+
+            IList<InventoryUpdate> updates = new List<InventoryUpdate>
+            {
+                update0,
+                update1,
+                update3,
+                update2
+            };
+
+            IList<InventoryUpdate> trackableUpdates = updates.AsTrackable();
+
+            List<InventoryUpdate> updatesToLink = trackableUpdates.OrderBy(iu => iu.InventoryUpdateId).ToList();
+            InventoryUpdate linkedToInventoryUpdate = null;
+            foreach (InventoryUpdate inventoryUpdate in updatesToLink)
+            {
+                inventoryUpdate.LinkedToInventoryUpdateId = linkedToInventoryUpdate?.InventoryUpdateId;
+                inventoryUpdate.LinkedToInventoryUpdate = linkedToInventoryUpdate;
+                inventoryUpdate.LinkedInventoryUpdate = null;
+                if (linkedToInventoryUpdate != null)
+                {
+                    linkedToInventoryUpdate.LinkedInventoryUpdate = inventoryUpdate;
+                }
+                linkedToInventoryUpdate = inventoryUpdate;
+            }
+
+            InventoryUpdate inventoryUpdateToUnlink = trackableUpdates[3];
+            linkedToInventoryUpdate = inventoryUpdateToUnlink.LinkedToInventoryUpdate;
+            InventoryUpdate linkedInventoryUpdate = inventoryUpdateToUnlink.LinkedInventoryUpdate;
+
+            inventoryUpdateToUnlink.LinkedToInventoryUpdateId = null;
+            inventoryUpdateToUnlink.LinkedToInventoryUpdate = null;
+            inventoryUpdateToUnlink.LinkedInventoryUpdate = null;
+
+            if (linkedToInventoryUpdate != null)
+            {
+                linkedToInventoryUpdate.LinkedInventoryUpdate = linkedInventoryUpdate;
+            }
+            if (linkedInventoryUpdate != null)
+            {
+                linkedInventoryUpdate.LinkedToInventoryUpdateId = linkedToInventoryUpdate?.InventoryUpdateId;
+                linkedInventoryUpdate.LinkedToInventoryUpdate = linkedToInventoryUpdate;
+            }
+
+            trackableUpdates.CastToIChangeTrackableCollection().IsChanged.Should().BeFalse();
+            trackableUpdates[0].CastToIChangeTrackable().IsChanged.Should().BeFalse();
+            trackableUpdates[1].CastToIChangeTrackable().IsChanged.Should().BeFalse();
+            trackableUpdates[2].CastToIChangeTrackable().IsChanged.Should().BeFalse();
+            trackableUpdates[3].CastToIChangeTrackable().IsChanged.Should().BeFalse();
         }
     }
 }

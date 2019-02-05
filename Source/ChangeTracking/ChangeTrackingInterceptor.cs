@@ -47,23 +47,24 @@ namespace ChangeTracking
                     throw new InvalidOperationException("Can not modify deleted object");
                 }
                 string propertyName = invocation.Method.PropertyName();
-                bool noOriginalValueFound = !_OriginalValueDictionary.ContainsKey(propertyName);
 
-                object originalValue = noOriginalValueFound ? _Properties[propertyName].GetValue(invocation.Proxy, null) : _OriginalValueDictionary[propertyName];
+                object previousValue = _Properties[propertyName].GetValue(invocation.Proxy, null);
+
                 invocation.Proceed();
                 object newValue = _Properties[propertyName].GetValue(invocation.Proxy, null);
 
-                if (!ReferenceEquals(originalValue, newValue))
+                if (!ReferenceEquals(previousValue, newValue))
                 {
-                    UnsubscribeFromChildStatusChanged(propertyName, originalValue);
+                    UnsubscribeFromChildStatusChanged(propertyName, previousValue);
                     SubscribeToChildStatusChanged(invocation.Proxy, propertyName, newValue);
                 }
-                if (noOriginalValueFound && !Equals(originalValue, newValue))
+                bool originalValueFound = _OriginalValueDictionary.TryGetValue(propertyName, out object originalValue);
+                if (!originalValueFound && !Equals(previousValue, newValue))
                 {
-                    _OriginalValueDictionary.Add(propertyName, originalValue);
+                    _OriginalValueDictionary.Add(propertyName, previousValue);
                     SetAndRaiseStatusChanged(invocation.Proxy, parents: new List<object> { invocation.Proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
                 }
-                else if (!noOriginalValueFound && Equals(originalValue, newValue))
+                else if (originalValueFound && Equals(originalValue, newValue))
                 {
                     _OriginalValueDictionary.Remove(propertyName);
                     SetAndRaiseStatusChanged(invocation.Proxy, parents: new List<object> { invocation.Proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
