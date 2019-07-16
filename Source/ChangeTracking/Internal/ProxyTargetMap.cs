@@ -63,6 +63,19 @@ namespace ChangeTracking.Internal
                 _ClearLock.ExitReadLock();
             }
         }
+
+        protected override void InsertItem(int index, ProxyWeakTargetMap item)
+        {
+            try
+            {
+                _ClearLock.EnterWriteLock();
+                base.InsertItem(index, item);
+            }
+            finally
+            {
+                _ClearLock.ExitWriteLock();
+            }
+        }
     }
 
     internal class ProxyTargetMap
@@ -102,7 +115,7 @@ namespace ChangeTracking.Internal
             }
             if (pocoSetter != null)
             {
-                _PocoSetters.Add(() => pocoSetter(_ProxyTargetMaps.First(m => ReferenceEquals(m.Proxy, proxy)).Target)); 
+                _PocoSetters.Add(() => pocoSetter(_ProxyTargetMaps.First(m => ReferenceEquals(m.Proxy, proxy)).Target));
             }
             return false;
         }
