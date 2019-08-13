@@ -72,7 +72,7 @@ namespace ChangeTracking
             copier?.Invoke(source, target);
         }
 
-        internal static object AsTrackableCollectionChild(Type type, object target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph)
+        internal static object AsTrackableCollectionChild(Type type, object target, ChangeTrackingSettings changeTrackingSettings, Graph graph)
         {
             ThrowIfTargetIsProxy(target);
             ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
@@ -85,7 +85,7 @@ namespace ChangeTracking
                         new[] { typeof(IChangeTrackableCollection<>).MakeGenericType(genericArgument), typeof(IRevertibleChangeTrackingInternal), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) },
                         target,
                         GetOptions(genericArgument),
-                        (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
+                        (IInterceptor)CreateInstance(typeof(ChangeTrackingCollectionInterceptor<>).MakeGenericType(genericArgument), target, changeTrackingSettings, graph));
             graph.Add(new ProxyWeakTargetMap(target, proxy));
             return proxy;
         }
@@ -98,7 +98,7 @@ namespace ChangeTracking
             }
         }
 
-        internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Internal.Graph graph)
+        internal static object AsTrackableChild(Type type, object target, Action<object> notifyParentItemCanceled, ChangeTrackingSettings changeTrackingSettings, Internal.Graph graph)
         {
             ThrowIfTargetIsProxy(target);
             ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
@@ -109,8 +109,8 @@ namespace ChangeTracking
             var changeTrackingInterceptor = CreateInstance(typeof(ChangeTrackingInterceptor<>).MakeGenericType(type), ChangeStatus.Unchanged);
             var notifyPropertyChangedInterceptor = CreateInstance(typeof(NotifyPropertyChangedInterceptor<>).MakeGenericType(type), changeTrackingInterceptor);
             var editableObjectInterceptor = CreateInstance(typeof(EditableObjectInterceptor<>).MakeGenericType(type), notifyParentItemCanceled);
-            var complexPropertyInterceptor = CreateInstance(typeof(ComplexPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
-            var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
+            var complexPropertyInterceptor = CreateInstance(typeof(ComplexPropertyInterceptor<>).MakeGenericType(type), changeTrackingSettings, graph);
+            var collectionPropertyInterceptor = CreateInstance(typeof(CollectionPropertyInterceptor<>).MakeGenericType(type), changeTrackingSettings, graph);
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(type,
                          new[] { typeof(IChangeTrackableInternal), typeof(IRevertibleChangeTrackingInternal), typeof(IChangeTrackable<>).MakeGenericType(type), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
                          target,
@@ -137,12 +137,10 @@ namespace ChangeTracking
 
         public static T AsTrackable<T>(this T target, ChangeStatus status = ChangeStatus.Unchanged, bool makeComplexPropertiesTrackable = true, bool makeCollectionPropertiesTrackable = true) where T : class
         {
-            Graph graph = new Graph();
-            T trackable = AsTrackable(target, status, null, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
-            return trackable;
+            return ChangeTrackingFactory.Default.AsTrackable(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable), status);
         }
 
-        internal static T AsTrackable<T>(this T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph) where T : class
+        internal static T AsTrackable<T>(this T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, ChangeTrackingSettings changeTrackingSettings, Graph graph) where T : class
         {
             ThrowIfTargetIsProxy(target);
             ProxyWeakTargetMap existing = graph.GetExistingProxyForTarget(target);
@@ -160,8 +158,8 @@ namespace ChangeTracking
             var changeTrackingInterceptor = new ChangeTrackingInterceptor<T>(status);
             var notifyPropertyChangedInterceptor = new NotifyPropertyChangedInterceptor<T>(changeTrackingInterceptor);
             var editableObjectInterceptor = new EditableObjectInterceptor<T>(notifyParentListItemCanceled);
-            var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
-            var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
+            var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(changeTrackingSettings, graph);
+            var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(changeTrackingSettings, graph);
             object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
                 new[] { typeof(IChangeTrackableInternal), typeof(IRevertibleChangeTrackingInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
                 target,
@@ -181,59 +179,63 @@ namespace ChangeTracking
             return (T)proxy;
         }
 
-        public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target) where T : class
+        internal static ICollection<T> AsTrackableCollection<T>(ICollection<T> target, ChangeTrackingSettings changeTrackingSettings) where T : class
         {
-            return AsTrackable(target, true, true);
-        }
-
-        public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target, bool makeComplexPropertiesTrackable = true, bool makeCollectionPropertiesTrackable = true) where T : class
-        {
-            return ((ICollection<T>)target).AsTrackable(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-        }
-
-        public static ICollection<T> AsTrackable<T>(this ICollection<T> target) where T : class
-        {
-            return AsTrackable(target, true, true);
-        }
-
-        public static ICollection<T> AsTrackable<T>(this ICollection<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
-        {
-            var list = target as IList<T>;
-            if (list == null)
+            if (!(target is IList<T> list))
             {
                 list = target.ToList();
             }
-            return list.AsTrackable(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-        }
-
-        public static IList<T> AsTrackable<T>(this List<T> target) where T : class
-        {
-            return AsTrackable(target, true, true);
-        }
-
-        public static IList<T> AsTrackable<T>(this List<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
-        {
-            return ((IList<T>)target).AsTrackable(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable);
-        }
-
-        public static IList<T> AsTrackable<T>(this IList<T> target) where T : class
-        {
-            return AsTrackable(target, true, true);
-        }
-
-        public static IList<T> AsTrackable<T>(this IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
-        {
-            ThrowIfTargetIsProxy(target);
-            if (target.OfType<IChangeTrackable<T>>().Any(ct => ct.ChangeTrackingStatus != ChangeStatus.Unchanged))
+            ThrowIfTargetIsProxy(list);
+            if (list.OfType<IChangeTrackable<T>>().Any(ct => ct.ChangeTrackingStatus != ChangeStatus.Unchanged))
             {
                 throw new InvalidOperationException("some items in the collection are already being tracked");
             }
 
             Graph graph = new Graph();
             object proxy = _ProxyGenerator.CreateInterfaceProxyWithTarget(typeof(IList<T>),
-                new[] { typeof(IChangeTrackableCollection<T>), typeof(IRevertibleChangeTrackingInternal), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, target, GetOptions(typeof(T)), new ChangeTrackingCollectionInterceptor<T>(target, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
-            graph.Add(new ProxyWeakTargetMap(target, proxy));
-            return (IList<T>)proxy;
+                new[] { typeof(IChangeTrackableCollection<T>), typeof(IRevertibleChangeTrackingInternal), typeof(IBindingList), typeof(ICancelAddNew), typeof(INotifyCollectionChanged) }, list, GetOptions(typeof(T)), new ChangeTrackingCollectionInterceptor<T>(list, changeTrackingSettings, graph));
+            graph.Add(new ProxyWeakTargetMap(list, proxy));
+            return (ICollection<T>)proxy;
+        }
+
+        public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target) where T : class
+        {
+            return ChangeTrackingFactory.Default.AsTrackableCollection(target);
+        }
+
+        public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target, bool makeComplexPropertiesTrackable = true, bool makeCollectionPropertiesTrackable = true) where T : class
+        {
+            return ChangeTrackingFactory.Default.AsTrackableCollection(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+        }
+
+        public static ICollection<T> AsTrackable<T>(this ICollection<T> target) where T : class
+        {
+            return ChangeTrackingFactory.Default.AsTrackableCollection(target);
+        }
+
+        public static ICollection<T> AsTrackable<T>(this ICollection<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
+        {
+            return ChangeTrackingFactory.Default.AsTrackableCollection(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+        }
+
+        public static IList<T> AsTrackable<T>(this List<T> target) where T : class
+        {
+            return (IList<T>)ChangeTrackingFactory.Default.AsTrackableCollection(target);
+        }
+
+        public static IList<T> AsTrackable<T>(this List<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
+        {
+            return (IList<T>)ChangeTrackingFactory.Default.AsTrackableCollection(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
+        }
+
+        public static IList<T> AsTrackable<T>(this IList<T> target) where T : class
+        {
+            return (IList<T>)ChangeTrackingFactory.Default.AsTrackableCollection(target);
+        }
+
+        public static IList<T> AsTrackable<T>(this IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable) where T : class
+        {
+            return (IList<T>)ChangeTrackingFactory.Default.AsTrackableCollection(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
         }
     }
 }

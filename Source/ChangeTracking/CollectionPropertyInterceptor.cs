@@ -11,11 +11,10 @@ namespace ChangeTracking
     internal class CollectionPropertyInterceptor<T> : IInterceptor, IInterceptorSettings
     {
         private static readonly List<PropertyInfo> _Properties;
-        private static Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool, Graph>> _Actions;
+        private static Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph>> _Actions;
         private readonly Dictionary<string, object> _Trackables;
         private readonly object _TrackablesLock;
-        private readonly bool _MakeComplexPropertiesTrackable;
-        private readonly bool _MakeCollectionPropertiesTrackable;
+        private readonly ChangeTrackingSettings _ChangeTrackingSettings;
         private readonly Graph _Graph;
         private bool _AreAllPropertiesTrackable;
 
@@ -23,34 +22,33 @@ namespace ChangeTracking
 
         static CollectionPropertyInterceptor()
         {
-            _Actions = new Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool, Graph>>();
+            _Actions = new Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph>>();
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
-            var getters = _Properties.Where(pi => pi.CanRead).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool, Graph>>(pi.Name, GetGetterAction(pi)));
+            var getters = _Properties.Where(pi => pi.CanRead).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph>>(pi.Name, GetGetterAction(pi)));
             foreach (var getter in getters)
             {
                 _Actions.Add("get_" + getter.Key, getter.Value);
             }
-            var setters = _Properties.Where(pi => pi.CanWrite).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, object, bool, bool, Graph>>(pi.Name, GetSetterAction(pi)));
+            var setters = _Properties.Where(pi => pi.CanWrite).Select(pi => new KeyValuePair<string, Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph>>(pi.Name, GetSetterAction(pi)));
             foreach (var setter in setters)
             {
                 _Actions.Add("set_" + setter.Key, setter.Value);
             }
         }
 
-        public CollectionPropertyInterceptor(bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph)
+        public CollectionPropertyInterceptor(ChangeTrackingSettings changeTrackingSettings, Graph graph)
         {
-            _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
-            _MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
+            _ChangeTrackingSettings = changeTrackingSettings;
             _Graph = graph;
             _Trackables = new Dictionary<string, object>();
             _TrackablesLock = new object();
         }
 
-        private static Action<IInvocation, Dictionary<string, object>, object, bool, bool, Graph> GetGetterAction(PropertyInfo propertyInfo)
+        private static Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph> GetGetterAction(PropertyInfo propertyInfo)
         {
             if (CanCollectionBeTrackable(propertyInfo))
             {
-                return (invocation, trackables, trackablesLock, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph) =>
+                return (invocation, trackables, trackablesLock, changeTrackingSettings, graph) =>
                 {
                     string propertyName = invocation.Method.PropertyName();
                     lock (trackablesLock)
@@ -62,23 +60,23 @@ namespace ChangeTracking
                             {
                                 return;
                             }
-                            trackables.Add(propertyName, Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph));
+                            trackables.Add(propertyName, Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, changeTrackingSettings, graph));
                         }
                         invocation.ReturnValue = trackables[propertyName];
                     }
                 };
             }
-            return (invocation, _, __, ___, ____, _____) =>
+            return (invocation, _, __, ___, ____) =>
             {
                 invocation.Proceed();
             };
         }
 
-        private static Action<IInvocation, Dictionary<string, object>, object, bool, bool, Graph> GetSetterAction(PropertyInfo propertyInfo)
+        private static Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph> GetSetterAction(PropertyInfo propertyInfo)
         {
             if (CanCollectionBeTrackable(propertyInfo))
             {
-                return (invocation, trackables, trackablesLock, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph) =>
+                return (invocation, trackables, trackablesLock, changeTrackingSettings, graph) =>
                 {
                     string parentPropertyName = invocation.Method.PropertyName();
                     invocation.Proceed();
@@ -99,7 +97,7 @@ namespace ChangeTracking
                         else
                         {
                             Monitor.Enter(trackablesLock, ref lockWasTaken);
-                            newValue = Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable, graph);
+                            newValue = Core.AsTrackableCollectionChild(propertyInfo.PropertyType, childTarget, changeTrackingSettings, graph);
                         }
                         if (!lockWasTaken)
                         {
@@ -116,7 +114,7 @@ namespace ChangeTracking
                     }
                 };
             }
-            return (invocation, _, __, ___, ____, _____) =>
+            return (invocation, _, __, ___, ____) =>
             {
                 invocation.Proceed();
             };
@@ -140,9 +138,9 @@ namespace ChangeTracking
                 invocation.ReturnValue = CollectionPropertyTrackables(invocation.Proxy);
                 return;
             }
-            if (_MakeCollectionPropertiesTrackable && _Actions.TryGetValue(invocation.Method.Name, out Action<IInvocation, Dictionary<string, object>, object, bool, bool, Graph> action))
+            if (_ChangeTrackingSettings.MakeCollectionPropertiesTrackable && _Actions.TryGetValue(invocation.Method.Name, out Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph> action))
             {
-                action(invocation, _Trackables, _TrackablesLock, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable, _Graph);
+                action(invocation, _Trackables, _TrackablesLock, _ChangeTrackingSettings, _Graph);
             }
             else
             {
@@ -152,7 +150,7 @@ namespace ChangeTracking
 
         private IEnumerable<object> CollectionPropertyTrackables(object proxy)
         {
-            if (!_MakeCollectionPropertiesTrackable)
+            if (!_ChangeTrackingSettings.MakeCollectionPropertiesTrackable)
             {
                 return Enumerable.Empty<object>();
             }

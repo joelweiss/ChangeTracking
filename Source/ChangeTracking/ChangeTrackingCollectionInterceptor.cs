@@ -11,12 +11,11 @@ namespace ChangeTracking
     {
         private ChangeTrackingBindingList<T> _WrappedTarget;
         private IList<T> _DeletedItems;
-        private static HashSet<string> _ImplementedMethods;
-        private static HashSet<string> _BindingListImplementedMethods;
-        private static HashSet<string> _IBindingListImplementedMethods;
-        private static HashSet<string> _INotifyCollectionChangedImplementedMethods;
-        private readonly bool _MakeComplexPropertiesTrackable;
-        private readonly bool _MakeCollectionPropertiesTrackable;
+        private readonly static HashSet<string> _ImplementedMethods;
+        private readonly static HashSet<string> _BindingListImplementedMethods;
+        private readonly static HashSet<string> _IBindingListImplementedMethods;
+        private readonly static HashSet<string> _INotifyCollectionChangedImplementedMethods;
+        private readonly ChangeTrackingSettings _ChangeTrackingSettings;
         private readonly Graph _Graph;
 
         public bool IsInitialized { get; set; }
@@ -29,16 +28,15 @@ namespace ChangeTracking
             _INotifyCollectionChangedImplementedMethods = new HashSet<string>(typeof(INotifyCollectionChanged).GetMethods(BindingFlags.Instance | BindingFlags.Public).Select(m => m.Name));
         }
 
-        internal ChangeTrackingCollectionInterceptor(IList<T> target, bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable, Graph graph)
+        internal ChangeTrackingCollectionInterceptor(IList<T> target, ChangeTrackingSettings changeTrackingSettings, Graph graph)
         {
-            _MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
-            _MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
+            _ChangeTrackingSettings = changeTrackingSettings;
             _Graph = graph;
             for (int i = 0; i < target.Count; i++)
             {
-                target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable, _Graph);
+                target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _ChangeTrackingSettings, _Graph);
             }
-            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _MakeComplexPropertiesTrackable, _MakeCollectionPropertiesTrackable, _Graph);
+            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _ChangeTrackingSettings, _Graph);
             _DeletedItems = new List<T>();
         }
 
