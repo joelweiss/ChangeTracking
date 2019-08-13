@@ -29,6 +29,31 @@ namespace ChangeTracking.Tests
                         OrderDetailId = 2,
                         ItemNo = "Item369"
                     }
+                },
+                DoNotTrackOrderDetails = new List<OrderDetail>
+                {
+                    new OrderDetail
+                    {
+                        OrderDetailId = 20,
+                        ItemNo = "Item20"
+                    }
+                },
+                LeadId = id + 500,
+                Lead = new Lead
+                {
+                    LeadId = id + 600
+                },
+                Leads = new List<Lead>
+                {
+                    new Lead
+                    {
+                        LeadId = id + 700
+                    }
+                },
+                DoNotTrackAddress = new Address
+                {
+                    AddressId = id + 800,
+                    City = "London"
                 }
             };
             Order linkedOrder = new Order

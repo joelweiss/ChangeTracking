@@ -37,9 +37,9 @@ namespace ChangeTracking
 
         private static ProxyGenerationOptions GetOptions(Type type) => _Options.GetOrAdd(type, CreateOptions);
 
-        private static void CopyFields<T>(T source, object target) => CopyFields(typeof(T), source, target);
+        private static void CopyFieldsAndProperties<T>(T source, object target) => CopyFieldsAndProperties(typeof(T), source, target);
 
-        private static void CopyFields(Type type, object source, object target)
+        private static void CopyFieldsAndProperties(Type type, object source, object target)
         {
             Action<object, object> copier = _FieldCopiers.GetOrAdd(type, typeCopying =>
             {
@@ -47,7 +47,11 @@ namespace ChangeTracking
                     .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(fi => !(fi.Name.StartsWith("<") && fi.Name.EndsWith(">k__BackingField")))
                     .ToList();
-                if (fieldInfosToCopy.Count == 0)
+                List<PropertyInfo> propertyInfosToCopy = typeCopying
+                   .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                   .Where(pi => pi.CanRead && pi.CanWrite && Utils.IsMarkedDoNotTrack(pi))
+                   .ToList();
+                if (fieldInfosToCopy.Count == 0 && propertyInfosToCopy.Count == 0)
                 {
                     return null;
                 }
@@ -65,7 +69,11 @@ namespace ChangeTracking
                     }
                     return Expression.Assign(Expression.Field(targetAsType, fi), Expression.Field(sourceAsType, fi));
                 });
-                BlockExpression block = Expression.Block(setFieldsExpressions);
+                IEnumerable<Expression> setPropertiesExpressions = propertyInfosToCopy.Select<PropertyInfo, Expression>(pi =>
+                {
+                    return Expression.Assign(Expression.Property(targetAsType, pi), Expression.Property(sourceAsType, pi));
+                });
+                BlockExpression block = Expression.Block(setFieldsExpressions.Concat(setPropertiesExpressions));
 
                 return Expression.Lambda<Action<object, object>>(block, sourceParameter, targetParameter).Compile();
             });
@@ -120,7 +128,7 @@ namespace ChangeTracking
                          (IInterceptor)editableObjectInterceptor,
                          (IInterceptor)complexPropertyInterceptor,
                          (IInterceptor)collectionPropertyInterceptor);
-            CopyFields(type: type, source: target, target: proxy);
+            CopyFieldsAndProperties(type: type, source: target, target: proxy);
             ((IInterceptorSettings)notifyPropertyChangedInterceptor).IsInitialized = true;
             ((IInterceptorSettings)changeTrackingInterceptor).IsInitialized = true;
             ((IInterceptorSettings)editableObjectInterceptor).IsInitialized = true;
@@ -169,7 +177,7 @@ namespace ChangeTracking
                 editableObjectInterceptor,
                 complexPropertyInterceptor,
                 collectionPropertyInterceptor);
-            CopyFields(source: target, target: proxy);
+            CopyFieldsAndProperties(source: target, target: proxy);
             notifyPropertyChangedInterceptor.IsInitialized = true;
             changeTrackingInterceptor.IsInitialized = true;
             editableObjectInterceptor.IsInitialized = true;

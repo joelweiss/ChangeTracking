@@ -124,7 +124,7 @@ namespace ChangeTracking
         {
             Type propertyType = propertyInfo.PropertyType;
             Type genericCollectionArgumentType = propertyType.GetGenericArguments().FirstOrDefault();
-            return genericCollectionArgumentType != null && propertyType.IsInterface && typeof(ICollection<>).MakeGenericType(genericCollectionArgumentType).IsAssignableFrom(propertyType);
+            return genericCollectionArgumentType != null && propertyType.IsInterface && typeof(ICollection<>).MakeGenericType(genericCollectionArgumentType).IsAssignableFrom(propertyType) && !Utils.IsMarkedDoNotTrack(propertyType);
         }
 
         public void Intercept(IInvocation invocation)

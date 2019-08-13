@@ -122,7 +122,7 @@ namespace ChangeTracking
 
         private static bool CanComplexPropertyBeTrackable(PropertyInfo propertyInfo)
         {
-            if (!propertyInfo.CanWrite)
+            if (!propertyInfo.CanWrite || Utils.IsMarkedDoNotTrack(propertyInfo))
             {
                 return false;
             }
@@ -130,7 +130,7 @@ namespace ChangeTracking
             return propertyType.IsClass &&
                 !propertyType.IsSealed &&
                 propertyType.GetConstructor(Type.EmptyTypes) != null &&
-                propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => pi.GetAccessors()[0].IsVirtual);
+                propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => Utils.IsMarkedDoNotTrack(pi) || pi.GetAccessors()[0].IsVirtual);
         }
 
         public void Intercept(IInvocation invocation)
