@@ -1,5 +1,4 @@
 ﻿using ChangeTracking.Internal;
-using System;
 using System.Collections.Generic;
 
 namespace ChangeTracking
@@ -9,36 +8,38 @@ namespace ChangeTracking
         static ChangeTrackingFactory() => Default = new ChangeTrackingFactory();
         public static ChangeTrackingFactory Default { get; }
 
-        public ChangeTrackingFactory() : this(new ChangeTrackingSettings(makeComplexPropertiesTrackable: true, makeCollectionPropertiesTrackable: false))
+        public ChangeTrackingFactory() : this(makeComplexPropertiesTrackable: true, makeCollectionPropertiesTrackable: false)
         {
 
         }
 
-        public ChangeTrackingFactory(ChangeTrackingSettings changeTrackingDefaultSettings)
+        public ChangeTrackingFactory(bool makeComplexPropertiesTrackable, bool makeCollectionPropertiesTrackable)
         {
-            ChangeTrackingDefaultSettings = changeTrackingDefaultSettings;
+            MakeComplexPropertiesTrackable = makeComplexPropertiesTrackable;
+            MakeCollectionPropertiesTrackable = makeCollectionPropertiesTrackable;
         }
 
         public T AsTrackable<T>(T target, ChangeStatus status = ChangeStatus.Unchanged) where T : class
         {
-            return AsTrackable(target, ChangeTrackingDefaultSettings, status);
+            return AsTrackable(target, new ChangeTrackingSettings(MakeComplexPropertiesTrackable, MakeCollectionPropertiesTrackable), status);
         }
 
-        public T AsTrackable<T>(T target, ChangeTrackingSettings changeTrackingSettings, ChangeStatus status = ChangeStatus.Unchanged) where T : class
+        internal T AsTrackable<T>(T target, ChangeTrackingSettings changeTrackingSettings, ChangeStatus status = ChangeStatus.Unchanged) where T : class
         {
             return Core.AsTrackable(target, status, null, changeTrackingSettings, new Graph());
         }
         
         public ICollection<T> AsTrackableCollection<T>(ICollection<T> target) where T : class
         {
-            return AsTrackableCollection(target, ChangeTrackingDefaultSettings);
+            return AsTrackableCollection(target, new ChangeTrackingSettings(MakeComplexPropertiesTrackable, MakeCollectionPropertiesTrackable));
         }
         
-        public ICollection<T> AsTrackableCollection<T>(ICollection<T> target, ChangeTrackingSettings changeTrackingSettings) where T : class
+        internal ICollection<T> AsTrackableCollection<T>(ICollection<T> target, ChangeTrackingSettings changeTrackingSettings) where T : class
         {
             return Core.AsTrackableCollection(target, changeTrackingSettings);
         }
 
-        public ChangeTrackingSettings ChangeTrackingDefaultSettings { get; set; }
+        public bool MakeComplexPropertiesTrackable { get; set; }
+        public bool MakeCollectionPropertiesTrackable { get; set; }
     }
 }
