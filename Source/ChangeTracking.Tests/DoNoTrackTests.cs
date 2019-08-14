@@ -73,5 +73,43 @@ namespace ChangeTracking.Tests
             trackable.DoNotTrackOrderDetails.Should().BeEquivalentTo(order.DoNotTrackOrderDetails);
             trackable.Leads.Should().BeEquivalentTo(order.Leads);
         }
+
+        [Fact]
+        public void AsTrackable_DoNotTrack_Should_Not_Change_Status()
+        {
+            var order = Helper.GetOrder();
+
+            Order trackable = order.AsTrackable();
+            const string stateValue = "State";
+            trackable.Address.State = stateValue;
+
+            trackable.CastToIChangeTrackable().ChangeTrackingStatus.Should().Equals(ChangeStatus.Unchanged);
+            trackable.CastToIChangeTrackable().RejectChanges();
+            trackable.Address.State.Should().Be(stateValue);
+        }
+
+        [Fact]
+        public void AsTrackable_DoNotTrack_Should_Not_RaiseEvents()
+        {
+            var order = Helper.GetOrder();
+
+            Order trackable = order.AsTrackable();
+            using (var monitor = ((IChangeTrackable)trackable).Monitor())
+            {
+                trackable.DoNotTrackOrderDetails.Add(new OrderDetail
+                {
+                    OrderDetailId = 123,
+                    ItemNo = "Item123"
+                });
+                trackable.Address.State = "State";
+                trackable.LeadId = 999;
+                trackable.Lead = new Lead();
+                trackable.Leads.Add(new Lead());
+                trackable.Leads = null;
+
+                monitor.Should().NotRaise(nameof(IChangeTrackable.StatusChanged));
+                monitor.Should().NotRaise(nameof(IChangeTrackable.PropertyChanged));
+            }
+        }
     }
 }
