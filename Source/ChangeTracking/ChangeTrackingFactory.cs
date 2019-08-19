@@ -8,7 +8,7 @@ namespace ChangeTracking
         static ChangeTrackingFactory() => Default = new ChangeTrackingFactory();
         public static ChangeTrackingFactory Default { get; }
 
-        public ChangeTrackingFactory() : this(makeComplexPropertiesTrackable: true, makeCollectionPropertiesTrackable: false)
+        public ChangeTrackingFactory() : this(makeComplexPropertiesTrackable: true, makeCollectionPropertiesTrackable: true)
         {
 
         }
