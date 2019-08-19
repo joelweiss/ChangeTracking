@@ -143,6 +143,11 @@ namespace ChangeTracking
             return Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, args, null);
         }
 
+        public static T AsTrackable<T>(this T target) where T : class
+        {
+            return ChangeTrackingFactory.Default.AsTrackable(target);
+        }
+
         public static T AsTrackable<T>(this T target, ChangeStatus status = ChangeStatus.Unchanged, bool makeComplexPropertiesTrackable = true, bool makeCollectionPropertiesTrackable = true) where T : class
         {
             return ChangeTrackingFactory.Default.AsTrackable(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable), status);
