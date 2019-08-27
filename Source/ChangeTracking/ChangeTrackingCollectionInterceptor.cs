@@ -34,7 +34,7 @@ namespace ChangeTracking
             _Graph = graph;
             for (int i = 0; i < target.Count; i++)
             {
-                target[i] = target[i].AsTrackable(ChangeStatus.Unchanged, ItemCanceled, _ChangeTrackingSettings, _Graph);
+                target[i] = ChangeTrackingFactory.Default.AsTrackable(target[i], ChangeStatus.Unchanged, ItemCanceled, _ChangeTrackingSettings, _Graph);
             }
             _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _ChangeTrackingSettings, _Graph);
             _DeletedItems = new List<T>();

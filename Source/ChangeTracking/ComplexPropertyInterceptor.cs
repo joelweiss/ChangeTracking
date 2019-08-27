@@ -60,7 +60,7 @@ namespace ChangeTracking
                             {
                                 return;
                             }
-                            trackables.Add(propertyName, Core.AsTrackableChild(propertyInfo.PropertyType, childTarget, null, changeTrackingSettings, graph));
+                            trackables.Add(propertyName, ChangeTrackingFactory.Default.AsTrackableChild(propertyInfo.PropertyType, childTarget, null, changeTrackingSettings, graph));
                         }
                         invocation.ReturnValue = trackables[propertyName];
                     }
@@ -97,7 +97,7 @@ namespace ChangeTracking
                         else
                         {
                             Monitor.Enter(trackablesLock, ref lockWasTaken);
-                            newValue = Core.AsTrackableChild(propertyInfo.PropertyType, childTarget, null, changeTrackingSettings, graph);
+                            newValue = ChangeTrackingFactory.Default.AsTrackableChild(propertyInfo.PropertyType, childTarget, null, changeTrackingSettings, graph);
                         }
                         if (!lockWasTaken)
                         {

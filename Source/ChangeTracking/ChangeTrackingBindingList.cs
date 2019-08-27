@@ -36,7 +36,7 @@ namespace ChangeTracking
             object trackable = item as IChangeTrackable<T>;
             if (trackable == null)
             {
-                trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _ChangeTrackingSettings, _Graph);
+                trackable = ChangeTrackingFactory.Default.AsTrackable(item, ChangeStatus.Added, _ItemCanceled, _ChangeTrackingSettings, _Graph);
             }
             base.InsertItem(index, (T)trackable);
             CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
@@ -47,7 +47,7 @@ namespace ChangeTracking
             object trackable = item as IChangeTrackable<T>;
             if (trackable == null)
             {
-                trackable = item.AsTrackable(ChangeStatus.Added, _ItemCanceled, _ChangeTrackingSettings, _Graph);
+                trackable = ChangeTrackingFactory.Default.AsTrackable(item, ChangeStatus.Added, _ItemCanceled, _ChangeTrackingSettings, _Graph);
             }
             T originalItem = this[index];
             base.SetItem(index, (T)trackable);
@@ -89,7 +89,7 @@ namespace ChangeTracking
             object trackable = newItem as IChangeTrackable<T>;
             if (trackable == null)
             {
-                trackable = newItem.AsTrackable(ChangeStatus.Added, _ItemCanceled, _ChangeTrackingSettings, _Graph);
+                trackable = ChangeTrackingFactory.Default.AsTrackable(newItem, ChangeStatus.Added, _ItemCanceled, _ChangeTrackingSettings, _Graph);
                 var editable = (IEditableObject)trackable;
                 editable.BeginEdit();
             }
