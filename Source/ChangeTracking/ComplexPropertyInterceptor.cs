@@ -129,7 +129,7 @@ namespace ChangeTracking
             Type propertyType = propertyInfo.PropertyType;
             return propertyType.IsClass &&
                 !propertyType.IsSealed &&
-                propertyType.GetConstructor(Type.EmptyTypes) != null &&
+                propertyType.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null) != null &&
                 propertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance).All(pi => Utils.IsMarkedDoNotTrack(pi) || pi.GetAccessors()[0].IsVirtual);
         }
 

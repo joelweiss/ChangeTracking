@@ -83,7 +83,7 @@ namespace ChangeTracking
 
             if (newItem == null)
             {
-                newItem = Activator.CreateInstance<T>();
+                newItem = (T)Activator.CreateInstance(typeof(T), nonPublic: true);
             }
 
             object trackable = newItem as IChangeTrackable<T>;
