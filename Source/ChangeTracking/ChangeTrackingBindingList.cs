@@ -9,7 +9,7 @@ namespace ChangeTracking
     internal sealed class ChangeTrackingBindingList<T> : BindingList<T>, INotifyCollectionChanged where T : class
     {
         private readonly Action<T> _ItemCanceled;
-        private Action<T> _DeleteItem;
+        private readonly Action<T> _DeleteItem;
         private readonly ChangeTrackingSettings _ChangeTrackingSettings;
         private readonly Graph _Graph;
 

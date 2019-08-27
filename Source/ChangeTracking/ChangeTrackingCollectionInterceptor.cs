@@ -9,8 +9,8 @@ namespace ChangeTracking
 {
     internal sealed class ChangeTrackingCollectionInterceptor<T> : IInterceptor, IChangeTrackableCollection<T>, IInterceptorSettings where T : class
     {
-        private ChangeTrackingBindingList<T> _WrappedTarget;
-        private IList<T> _DeletedItems;
+        private readonly ChangeTrackingBindingList<T> _WrappedTarget;
+        private readonly IList<T> _DeletedItems;
         private readonly static HashSet<string> _ImplementedMethods;
         private readonly static HashSet<string> _BindingListImplementedMethods;
         private readonly static HashSet<string> _IBindingListImplementedMethods;

@@ -11,7 +11,7 @@ namespace ChangeTracking
     internal class CollectionPropertyInterceptor<T> : IInterceptor, IInterceptorSettings
     {
         private static readonly List<PropertyInfo> _Properties;
-        private static Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph>> _Actions;
+        private static readonly Dictionary<string, Action<IInvocation, Dictionary<string, object>, object, ChangeTrackingSettings, Graph>> _Actions;
         private readonly Dictionary<string, object> _Trackables;
         private readonly object _TrackablesLock;
         private readonly ChangeTrackingSettings _ChangeTrackingSettings;
