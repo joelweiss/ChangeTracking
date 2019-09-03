@@ -211,7 +211,7 @@ namespace ChangeTracking
 
         private T GetPoco(T proxy, UnrollGraph unrollGraph, Func<PropertyInfo, object, object> getPropertyProxy, Func<IChangeTrackableInternal, UnrollGraph, object> getPropertyPoco)
         {
-            var original = Activator.CreateInstance<T>();
+            T original = (T)Activator.CreateInstance(typeof(T), nonPublic: true);
             foreach (var property in _Properties.Values)
             {
                 object oldPropertyProxyValue = getPropertyProxy(property, proxy);
