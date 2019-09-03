@@ -318,5 +318,31 @@ namespace ChangeTracking.Tests
 
             trackable.Should().BeAssignableTo<IChangeTrackableCollection<Order>>();
         }
+
+        [Fact]
+        public void AsTrackable_Should_Take_MakeCollectionPropertiesTrackable_From_Default()
+        {
+            ChangeTrackingFactory.Default.MakeCollectionPropertiesTrackable = false;
+            Order order = Helper.GetOrder();
+
+            Order trackable = order.AsTrackable();
+
+            trackable.Should().BeAssignableTo<IChangeTrackable<Order>>();
+            trackable.OrderDetails.Should().NotBeAssignableTo<IChangeTrackableCollection<OrderDetail>>();
+            ChangeTrackingFactory.Default.MakeCollectionPropertiesTrackable = true;
+        }
+
+        [Fact]
+        public void AsTrackable_Should_Take_MakeComplexPropertiesTrackable_From_Default()
+        {
+            ChangeTrackingFactory.Default.MakeComplexPropertiesTrackable = false;
+            Order order = Helper.GetOrder();
+
+            Order trackable = order.AsTrackable();
+
+            trackable.Should().BeAssignableTo<IChangeTrackable<Order>>();
+            trackable.Address.Should().NotBeAssignableTo<IChangeTrackable<Address>>();
+            ChangeTrackingFactory.Default.MakeComplexPropertiesTrackable = true;
+        }
     }
 }

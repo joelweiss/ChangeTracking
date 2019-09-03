@@ -21,17 +21,17 @@ namespace ChangeTracking
         public ChangeTrackingProxyGenerationHook(Type type)
         {
             _Type = type;
-            const BindingFlags BindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             _InstanceMethodsToSkip = new HashSet<MethodInfo>(type
-                .GetMethods(BindingFlags)
-                .Where(mi => !mi.IsSpecialName || (mi.IsProperty() && !type.GetProperty(mi.PropertyName(), BindingFlags).CanWrite)));
+                .GetMethods(bindingFlags)
+                .Where(mi => !mi.IsSpecialName || (mi.IsProperty() && type.GetProperty(mi.PropertyName(), bindingFlags) is PropertyInfo pi && (!pi.CanWrite || Utils.IsMarkedDoNotTrack(pi)))));
         }
 
         public void MethodsInspected() { }
 
         public void NonProxyableMemberNotification(Type type, MemberInfo memberInfo)
         {
-            if (memberInfo is MethodInfo methodInfo && methodInfo.IsProperty())
+            if (memberInfo is MethodInfo methodInfo && methodInfo.IsProperty() && !_InstanceMethodsToSkip.Contains(methodInfo))
             {
                 throw new InvalidOperationException($"Property {methodInfo.Name.Substring("set_".Length)} is not virtual. Can't track classes with non-virtual properties.");
             }

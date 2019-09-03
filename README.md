@@ -77,8 +77,15 @@ trackable.AcceptChanges();
 //If ChangeTrackingStatus is Changed it returns all changed property names, if ChangeTrackingStatus is Added or Deleted it returns all properties
 trackable.ChangedProperties();
 ```
-By default complex properties and collection properties will be tracked (if it can be made trackable) as well.
-if you do not wish to track them you can set it when creating the trackable.
+By default complex properties and collection properties will be tracked (if it can be made trackable).
+
+You can change the default by setting 
+```csharp
+ChangeTrackingFactory.Default.MakeCollectionPropertiesTrackable = false;
+
+ChangeTrackingFactory.Default.MakeComplexPropertiesTrackable = false;
+```
+You can override the default when creating the trackable.
 ```csharp
 var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
 ```
@@ -117,6 +124,28 @@ trackable.AcceptChanges();
 // Will Reject all the changes in the collection and its items, deleted items will be moved back to the collection, added items removed and all items ChangeTrackingStatus will be Unchanged
 trackable.RejectChanges();
 ```
+
+### Exlude Properties
+To exlude a property from being tracked, apply the `DoNoTrack` attribute to the property or to the the property class.
+
+
+```csharp
+public class Order
+{
+    [DoNoTrack]
+    public virtual Address Address { get; set; }
+
+    //will not be tracked bacause the Lead lass is marked [DoNotTrack].
+    public virtual Lead Lead { get; set; }
+}
+
+[DoNoTrack]
+public class Lead
+{
+    public virtual int LeadId { get; set; }
+}
+```
+
 Requirements and restrictions
 --------------------------------
 

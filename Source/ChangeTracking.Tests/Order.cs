@@ -8,6 +8,7 @@ namespace ChangeTracking.Tests
         public Order()
         {
             OrderDetails = new List<OrderDetail>();
+            Leads = new List<Lead>();
         }
 
         public virtual int Id { get; set; }
@@ -18,6 +19,14 @@ namespace ChangeTracking.Tests
         public virtual OrderDetail OrderDetail => OrderDetails?.FirstOrDefault(od => od.OrderDetailId == Id);
         public virtual Order LinkedToOrder { get; set; }
         public virtual Order LinkedOrder { get; set; }
+        [DoNoTrack]
+        public int LeadId { get; set; }
+        [DoNoTrack]
+        public virtual IList<OrderDetail> DoNotTrackOrderDetails { get; set; }
+        [DoNoTrack]
+        public virtual Address DoNotTrackAddress { get; set; }
+        public virtual Lead Lead { get; set; }
+        public virtual IList<Lead> Leads { get; set; }
 
         public Order CreateOrder()
         {

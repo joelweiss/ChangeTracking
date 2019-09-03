@@ -336,7 +336,7 @@ namespace ChangeTracking.Tests
             var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
 
             trackable.Address.AddressId = 99;
-            Action action = () => { var address = (IChangeTrackable<Address>)trackable.Address; };
+            Action action = () => { _ = (IChangeTrackable<Address>)trackable.Address; };
 
             action.Should().Throw<InvalidCastException>();
         }
@@ -425,7 +425,7 @@ namespace ChangeTracking.Tests
             var order = Helper.GetOrder();
             var trackable = order.AsTrackable(makeCollectionPropertiesTrackable: false);
 
-            Action action = () => { var details = (IChangeTrackableCollection<OrderDetail>)trackable.OrderDetails; };
+            Action action = () => { _ = (IChangeTrackableCollection<OrderDetail>)trackable.OrderDetails; };
 
             action.Should().Throw<InvalidCastException>();
         }

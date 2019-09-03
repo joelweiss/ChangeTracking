@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace ChangeTracking.Internal
 {
@@ -20,6 +22,29 @@ namespace ChangeTracking.Internal
                 parents.AddRange(result.Cast<object>());
             }
             return result;
+        }
+
+        internal static bool IsMarkedDoNotTrack(PropertyInfo propertyInfo)
+        {
+            Type doNoTrackAttribute = typeof(DoNoTrackAttribute);
+            return propertyInfo.GetCustomAttribute(doNoTrackAttribute) != null
+                ? true
+                : IsMarkedDoNotTrack(propertyInfo.PropertyType);
+        }
+
+        internal static bool IsMarkedDoNotTrack(Type type)
+        {
+            Type doNoTrackAttribute = typeof(DoNoTrackAttribute);
+            if (type.GetCustomAttribute(doNoTrackAttribute) != null)
+            {
+                return true;
+            }
+            if (type.IsInterface && type.GetGenericArguments().FirstOrDefault() is Type genericCollectionArgumentType && typeof(ICollection<>).MakeGenericType(genericCollectionArgumentType).IsAssignableFrom(type) && genericCollectionArgumentType.GetCustomAttribute(doNoTrackAttribute) != null)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
