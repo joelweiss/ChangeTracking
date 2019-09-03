@@ -77,8 +77,15 @@ trackable.AcceptChanges();
 //If ChangeTrackingStatus is Changed it returns all changed property names, if ChangeTrackingStatus is Added or Deleted it returns all properties
 trackable.ChangedProperties();
 ```
-By default complex properties and collection properties will be tracked (if it can be made trackable) as well.
-if you do not wish to track them you can set it when creating the trackable.
+By default complex properties and collection properties will be tracked (if it can be made trackable).
+
+You can change the default by setting 
+```csharp
+ChangeTrackingFactory.Default.MakeCollectionPropertiesTrackable = false;
+
+ChangeTrackingFactory.Default.MakeComplexPropertiesTrackable = false;
+```
+You can override the default when creating the trackable.
 ```csharp
 var trackable = order.AsTrackable(makeComplexPropertiesTrackable: false);
 ```
