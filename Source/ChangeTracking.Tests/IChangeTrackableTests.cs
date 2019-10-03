@@ -668,7 +668,7 @@ namespace ChangeTracking.Tests
         {
             Order order = Helper.GetOrder();
             var trackable = order.AsTrackable();
-            trackable.OrderDetails.Clear();
+            trackable.OrderDetails.RemoveAt(0);
 
             trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEquivalentTo(nameof(Order.OrderDetails));
         }
