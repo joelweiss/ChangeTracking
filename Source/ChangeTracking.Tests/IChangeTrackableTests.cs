@@ -654,6 +654,26 @@ namespace ChangeTracking.Tests
         }
 
         [Fact]
+        public void When_Changed_ComplexProperty_ChangedProperties_Should_ReturnChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            trackable.Address.City = "Hanoi";
+
+            trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEquivalentTo(nameof(Order.Address));
+        }
+
+        [Fact]
+        public void When_Changed_CollectionProperty_ChangedProperties_Should_ReturnChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+            trackable.OrderDetails.Clear();
+
+            trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEquivalentTo(nameof(Order.OrderDetails));
+        }
+
+        [Fact]
         public void Change_Property_From_Null_To_Null_Should_Not_Throw()
         {
             var trackable = new Order { Id = 321, }.AsTrackable();
