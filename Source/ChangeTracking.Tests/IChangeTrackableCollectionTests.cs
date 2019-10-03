@@ -344,5 +344,19 @@ namespace ChangeTracking.Tests
             trackable.Address.Should().NotBeAssignableTo<IChangeTrackable<Address>>();
             ChangeTrackingFactory.Default.MakeComplexPropertiesTrackable = true;
         }
+               
+        [Fact]
+        public void When_Clear_Collection_Should_Work()
+        {
+            IList<Order> orders = Helper.GetOrdersIList();
+            IList<Order> trackable = orders.AsTrackable();
+
+            trackable.Clear();
+
+            IChangeTrackableCollection<Order> trackableCollection = trackable.CastToIChangeTrackableCollection();
+            trackableCollection.IsChanged.Should().BeTrue();
+            trackableCollection.DeletedItems.Should().NotBeEmpty();
+            trackableCollection.UnchangedItems.Should().BeEmpty();
+        }
     }
 }
