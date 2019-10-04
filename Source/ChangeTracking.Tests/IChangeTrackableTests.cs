@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using FluentAssertions.Events;
 using Xunit;
 
 namespace ChangeTracking.Tests
@@ -661,6 +662,79 @@ namespace ChangeTracking.Tests
             trackable.Address.City = "Hanoi";
 
             trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEquivalentTo(nameof(Order.Address));
+        }
+
+        [Fact]
+        public void When_Changed_ComplexProperty_PropertyChanged_Should_Raise_For_ChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            IMonitor<System.ComponentModel.INotifyPropertyChanged> monitor = ((System.ComponentModel.INotifyPropertyChanged)trackable).Monitor();
+            trackable.Address.City = "Karachi";
+
+            monitor.Should().RaisePropertyChangeFor(o => ((IChangeTrackable)o).ChangedProperties);
+            monitor.OccurredEvents.Count(i => i.Parameters.OfType<System.ComponentModel.PropertyChangedEventArgs>().SingleOrDefault()?.PropertyName == nameof(IChangeTrackable.ChangedProperties)).Should().Be(1);
+        }
+
+        [Fact]
+        public void When_Changed_ComplexProperty_PropertyChanged_Should_Raise_Once_If_Changing_Again_For_ChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            IMonitor<System.ComponentModel.INotifyPropertyChanged> monitor = ((System.ComponentModel.INotifyPropertyChanged)trackable).Monitor();
+            trackable.Address.City = "Milan";
+            trackable.Address.City = "Osaka";
+
+            monitor.Should().RaisePropertyChangeFor(o => ((IChangeTrackable)o).ChangedProperties);
+            monitor.OccurredEvents.Count(i => i.Parameters.OfType<System.ComponentModel.PropertyChangedEventArgs>().SingleOrDefault()?.PropertyName == nameof(IChangeTrackable.ChangedProperties)).Should().Be(1);
+        }
+
+        [Fact]
+        public void When_Changed_ComplexProperty_PropertyChanged_Should_Raise_Twice_If_Changing_Back_To_Original_For_ChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            IMonitor<System.ComponentModel.INotifyPropertyChanged> monitor = ((System.ComponentModel.INotifyPropertyChanged)trackable).Monitor();
+            string originalCiti = trackable.Address.City;
+            trackable.Address.City = "Phoenix";
+            trackable.Address.City = originalCiti;
+
+            monitor.Should().RaisePropertyChangeFor(o => ((IChangeTrackable)o).ChangedProperties);
+            monitor.OccurredEvents.Count(i => i.Parameters.OfType<System.ComponentModel.PropertyChangedEventArgs>().SingleOrDefault()?.PropertyName == nameof(IChangeTrackable.ChangedProperties)).Should().Be(2);
+        }
+
+        [Fact]
+        public void When_Changed_ComplexProperty_PropertyChanged_Should_Raise_Twice_If_Reverting_Back_To_Original_For_ChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            IMonitor<System.ComponentModel.INotifyPropertyChanged> monitor = ((System.ComponentModel.INotifyPropertyChanged)trackable).Monitor();
+            trackable.Address.City = "Hiroshima";
+            trackable.Address.CastToIChangeTrackable().RejectChanges();
+
+            trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEmpty();
+            monitor.Should().RaisePropertyChangeFor(o => ((IChangeTrackable)o).ChangedProperties);
+            monitor.OccurredEvents.Count(i => i.Parameters.OfType<System.ComponentModel.PropertyChangedEventArgs>().SingleOrDefault()?.PropertyName == nameof(IChangeTrackable.ChangedProperties)).Should().Be(2);
+        }
+
+        [Fact]
+        public void When_Changed_CollectionProperty_PropertyChanged_Should_Raise_Twice_If_AcceptChanges_For_ChangedProperties()
+        {
+            Order order = Helper.GetOrder();
+            var trackable = order.AsTrackable();
+
+            IMonitor<System.ComponentModel.INotifyPropertyChanged> monitor = ((System.ComponentModel.INotifyPropertyChanged)trackable).Monitor();
+            trackable.OrderDetails.Clear();
+
+            trackable.CastToIChangeTrackable().ChangedProperties.Count().Should().Be(1);
+            trackable.CastToIChangeTrackable().AcceptChanges();
+            trackable.CastToIChangeTrackable().ChangedProperties.Should().BeEmpty();
+            monitor.Should().RaisePropertyChangeFor(o => ((IChangeTrackable)o).ChangedProperties);
+            monitor.OccurredEvents.Count(i => i.Parameters.OfType<System.ComponentModel.PropertyChangedEventArgs>().SingleOrDefault()?.PropertyName == nameof(IChangeTrackable.ChangedProperties)).Should().Be(2);
         }
 
         [Fact]

@@ -296,6 +296,7 @@ namespace ChangeTracking
             {
                 throw new InvalidOperationException("Can not call AcceptChanges on deleted object");
             }
+            ChangeStatus changeTrackingStatusWhenStarted = _ChangeTrackingStatus;
             parents = parents ?? new List<object>(20) { proxy };
             foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
@@ -309,12 +310,17 @@ namespace ChangeTracking
                 }
             }
             _OriginalValueDictionary.Clear();
-            RaiseChangePropertiesChanged(proxy);
             SetAndRaiseStatusChanged(proxy, parents, setStatusEvenIfStatsAddedOrDeleted: true);
+            bool anythingChanged = changeTrackingStatusWhenStarted != _ChangeTrackingStatus;
+            if (anythingChanged)
+            {
+                RaiseChangePropertiesChanged(proxy);
+            }
         }
 
         private void RejectChanges(object proxy, List<object> parents)
         {
+            ChangeStatus changeTrackingStatusWhenStarted = _ChangeTrackingStatus;
             parents = parents ?? new List<object>(20) { proxy };
             foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
@@ -335,10 +341,14 @@ namespace ChangeTracking
                     _Properties[changedProperty.Key].SetValue(proxy, changedProperty.Value, null);
                 }
                 _OriginalValueDictionary.Clear();
-                RaiseChangePropertiesChanged(proxy);
                 _InRejectChanges = false;
             }
             SetAndRaiseStatusChanged(proxy, parents, setStatusEvenIfStatsAddedOrDeleted: true);
+            bool anythingChanged = changeTrackingStatusWhenStarted != _ChangeTrackingStatus;
+            if (anythingChanged)
+            {
+                RaiseChangePropertiesChanged(proxy);
+            }
         }
 
         private void UnsubscribeFromChildStatusChanged(string propertyName, object oldChild)
