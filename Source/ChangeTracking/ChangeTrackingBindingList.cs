@@ -62,6 +62,17 @@ namespace ChangeTracking
             CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItem, index));
         }
 
+        protected override void ClearItems()
+        {
+            for (int index = 0; index < Count; index++)
+            {
+                T removedItem = this[index];
+                _DeleteItem?.Invoke(removedItem);
+            }
+            base.ClearItems();
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
         protected override void OnListChanged(ListChangedEventArgs e)
         {
             base.OnListChanged(e);

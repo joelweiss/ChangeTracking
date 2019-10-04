@@ -11,13 +11,15 @@ namespace ChangeTracking
 {
     internal sealed class ChangeTrackingInterceptor<T> : IInterceptor, IInterceptorSettings where T : class
     {
-        private Dictionary<string, object> _OriginalValueDictionary;
-        internal EventHandler _StatusChanged = delegate { };
-        private static Dictionary<string, PropertyInfo> _Properties;
-        private ChangeStatus _ChangeTrackingStatus;
+        private static readonly Dictionary<string, PropertyInfo> _Properties;
+        private readonly Dictionary<string, object> _OriginalValueDictionary;
+        private readonly HashSet<string> _ChangedComplexOrCollectionProperties;
         private readonly Dictionary<string, Delegate> _StatusChangedEventHandlers;
         private readonly object _StatusChangedEventHandlersLock;
+        private ChangeStatus _ChangeTrackingStatus;
         private bool _InRejectChanges;
+        internal EventHandler _StatusChanged = delegate { };
+        internal EventHandler _ChangedPropertiesChanged = delegate { };
 
         public bool IsInitialized { get; set; }
 
@@ -29,6 +31,7 @@ namespace ChangeTracking
         internal ChangeTrackingInterceptor(ChangeStatus status)
         {
             _OriginalValueDictionary = new Dictionary<string, object>();
+            _ChangedComplexOrCollectionProperties = new HashSet<string>();
             _StatusChangedEventHandlers = new Dictionary<string, Delegate>();
             _StatusChangedEventHandlersLock = new object();
             _ChangeTrackingStatus = status;
@@ -62,11 +65,13 @@ namespace ChangeTracking
                 if (!originalValueFound && !Equals(previousValue, newValue))
                 {
                     _OriginalValueDictionary.Add(propertyName, previousValue);
+                    RaiseChangePropertiesChanged(invocation.Proxy);
                     SetAndRaiseStatusChanged(invocation.Proxy, parents: new List<object> { invocation.Proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
                 }
                 else if (originalValueFound && Equals(originalValue, newValue))
                 {
                     _OriginalValueDictionary.Remove(propertyName);
+                    RaiseChangePropertiesChanged(invocation.Proxy);
                     SetAndRaiseStatusChanged(invocation.Proxy, parents: new List<object> { invocation.Proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
                 }
                 return;
@@ -291,6 +296,7 @@ namespace ChangeTracking
             {
                 throw new InvalidOperationException("Can not call AcceptChanges on deleted object");
             }
+            ChangeStatus changeTrackingStatusWhenStarted = _ChangeTrackingStatus;
             parents = parents ?? new List<object>(20) { proxy };
             foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
@@ -305,10 +311,16 @@ namespace ChangeTracking
             }
             _OriginalValueDictionary.Clear();
             SetAndRaiseStatusChanged(proxy, parents, setStatusEvenIfStatsAddedOrDeleted: true);
+            bool anythingChanged = changeTrackingStatusWhenStarted != _ChangeTrackingStatus;
+            if (anythingChanged)
+            {
+                RaiseChangePropertiesChanged(proxy);
+            }
         }
 
         private void RejectChanges(object proxy, List<object> parents)
         {
+            ChangeStatus changeTrackingStatusWhenStarted = _ChangeTrackingStatus;
             parents = parents ?? new List<object>(20) { proxy };
             foreach (var child in Utils.GetChildren<System.ComponentModel.IRevertibleChangeTracking>(proxy, parents))
             {
@@ -332,6 +344,11 @@ namespace ChangeTracking
                 _InRejectChanges = false;
             }
             SetAndRaiseStatusChanged(proxy, parents, setStatusEvenIfStatsAddedOrDeleted: true);
+            bool anythingChanged = changeTrackingStatusWhenStarted != _ChangeTrackingStatus;
+            if (anythingChanged)
+            {
+                RaiseChangePropertiesChanged(proxy);
+            }
         }
 
         private void UnsubscribeFromChildStatusChanged(string propertyName, object oldChild)
@@ -357,20 +374,29 @@ namespace ChangeTracking
 
         private void SubscribeToChildStatusChanged(object proxy, string propertyName, object newValue)
         {
+            void Handler(object sender)
+            {
+                SetAndRaiseStatusChanged(proxy, parents: new List<object> { proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
+                if (sender is IRevertibleChangeTrackingInternal trackable && trackable.IsChanged(new List<object> { proxy }) is bool isChanged && (isChanged && _ChangedComplexOrCollectionProperties.Add(propertyName) || !isChanged && _ChangedComplexOrCollectionProperties.Remove(propertyName)))
+                {
+                    RaiseChangePropertiesChanged(proxy);
+                }
+            }
+
             lock (_StatusChangedEventHandlersLock)
             {
                 if (!_StatusChangedEventHandlers.ContainsKey(propertyName))
                 {
                     if (newValue is IChangeTrackable newChild)
                     {
-                        EventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: new List<object> { proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
+                        EventHandler newHandler = (sender, e) => Handler(newValue);
                         newChild.StatusChanged += newHandler;
                         _StatusChangedEventHandlers.Add(propertyName, newHandler);
                         return;
                     }
                     if (newValue is System.ComponentModel.IBindingList newCollectionChild)
                     {
-                        System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => SetAndRaiseStatusChanged(proxy, parents: new List<object> { proxy }, setStatusEvenIfStatsAddedOrDeleted: false);
+                        System.ComponentModel.ListChangedEventHandler newHandler = (sender, e) => Handler(newValue);
                         newCollectionChild.ListChanged += newHandler;
                         _StatusChangedEventHandlers.Add(propertyName, newHandler);
                     }
@@ -403,9 +429,11 @@ namespace ChangeTracking
                 case ChangeStatus.Deleted:
                     return _Properties.Keys;
                 case ChangeStatus.Changed:
-                    return _OriginalValueDictionary.Keys;
+                    return _Properties.Keys.Where(propertyName => _OriginalValueDictionary.Keys.Concat(_ChangedComplexOrCollectionProperties).Contains(propertyName));
                 default: throw null;
             }
         }
+
+        private void RaiseChangePropertiesChanged(object sender) => _ChangedPropertiesChanged(sender, EventArgs.Empty);
     }
 }

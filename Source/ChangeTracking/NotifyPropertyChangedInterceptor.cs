@@ -32,11 +32,8 @@ namespace ChangeTracking
             _ListChangedEventHandlersLock = new object();
             _CurrentlyExecutingPropertyChangedEvents = new HashSet<string>();
             _CurrentlyExecutingPropertyChangedEventsLock = new object();
-            changeTrackingInterceptor._StatusChanged += (o, e) =>
-            {
-                RaisePropertyChanged(o, nameof(IChangeTrackable.ChangeTrackingStatus));
-                RaisePropertyChanged(o, nameof(IChangeTrackable.ChangedProperties));
-            };
+            changeTrackingInterceptor._StatusChanged += (o, e) => RaisePropertyChanged(o, nameof(IChangeTrackable.ChangeTrackingStatus));
+            changeTrackingInterceptor._ChangedPropertiesChanged += (o, e) => RaisePropertyChanged(o, nameof(IChangeTrackable.ChangedProperties));
             PropertyChanged += delegate { };
         }
 
