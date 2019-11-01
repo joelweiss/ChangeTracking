@@ -75,7 +75,7 @@ trackable.RejectChanges();
 trackable.AcceptChanges();
 
 //If ChangeTrackingStatus is Changed it returns all changed property names, if ChangeTrackingStatus is Added or Deleted it returns all properties
-trackable.ChangedProperties();
+trackable.ChangedProperties;
 ```
 By default complex properties and collection properties will be tracked (if it can be made trackable).
 
