@@ -135,7 +135,7 @@ public class Order
     [DoNoTrack]
     public virtual Address Address { get; set; }
 
-    //will not be tracked bacause the Lead lass is marked [DoNotTrack].
+    //will not be tracked because the Lead class is marked [DoNotTrack].
     public virtual Lead Lead { get; set; }
 }
 
