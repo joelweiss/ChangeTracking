@@ -28,7 +28,7 @@ namespace ChangeTracking
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite).ToDictionary(pi => pi.Name);
         }
 
-        internal ChangeTrackingInterceptor(ChangeStatus status)
+        public ChangeTrackingInterceptor(ChangeStatus status)
         {
             _OriginalValueDictionary = new Dictionary<string, object>();
             _ChangedComplexOrCollectionProperties = new HashSet<string>();

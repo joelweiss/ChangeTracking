@@ -94,11 +94,11 @@ namespace ChangeTracking
 
         private void ItemCanceled(T item) => _WrappedTarget.CancelNew(_WrappedTarget.IndexOf(item));
 
-        public IEnumerable<T> UnchangedItems => _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>();
+        public IEnumerable<T> UnchangedItems => _WrappedTarget.Cast<IChangeTrackable>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Unchanged).Cast<T>();
 
-        public IEnumerable<T> AddedItems => _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Added).Cast<T>();
+        public IEnumerable<T> AddedItems => _WrappedTarget.Cast<IChangeTrackable>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Added).Cast<T>();
 
-        public IEnumerable<T> ChangedItems => _WrappedTarget.Cast<IChangeTrackable<T>>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>();
+        public IEnumerable<T> ChangedItems => _WrappedTarget.Cast<IChangeTrackable>().Where(ct => ct.ChangeTrackingStatus == ChangeStatus.Changed).Cast<T>();
 
         public IEnumerable<T> DeletedItems => _DeletedItems.Select(i => i);
 

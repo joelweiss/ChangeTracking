@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 
 namespace ChangeTracking
 {
+
     public interface IChangeTrackable<T> : IChangeTrackable
     {
         /// <summary>

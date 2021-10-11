@@ -24,7 +24,7 @@ namespace ChangeTracking
             _Properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(pi => pi.Name);
         }
 
-        internal NotifyPropertyChangedInterceptor(ChangeTrackingInterceptor<T> changeTrackingInterceptor)
+        public NotifyPropertyChangedInterceptor(ChangeTrackingInterceptor<T> changeTrackingInterceptor)
         {
             _PropertyChangedEventHandlers = new Dictionary<string, PropertyChangedEventHandler>();
             _PropertyChangedEventHandlersLock = new object();

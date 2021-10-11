@@ -26,7 +26,7 @@ namespace ChangeTracking
             _BeforeEditValues = new Dictionary<string, object>();
         }
 
-        internal EditableObjectInterceptor(Action<T> notifyParentItemCanceled)
+        public EditableObjectInterceptor(Action<T> notifyParentItemCanceled)
             : this()
         {
             _NotifyParentItemCanceled = notifyParentItemCanceled;

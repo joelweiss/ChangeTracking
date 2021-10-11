@@ -66,28 +66,62 @@ namespace ChangeTracking
                 throw new InvalidOperationException("Only IList<T>, List<T> and ICollection<T> are supported");
             }
 
-            var changeTrackingInterceptor = new ChangeTrackingInterceptor<T>(status);
-            var notifyPropertyChangedInterceptor = new NotifyPropertyChangedInterceptor<T>(changeTrackingInterceptor);
-            var editableObjectInterceptor = new EditableObjectInterceptor<T>(notifyParentListItemCanceled);
-            var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(changeTrackingSettings, graph);
-            var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(changeTrackingSettings, graph);
-            object proxy = _ProxyGenerator.CreateClassProxyWithTarget(typeof(T),
-                new[] { typeof(IChangeTrackableInternal), typeof(IRevertibleChangeTrackingInternal), typeof(IChangeTrackable<T>), typeof(IChangeTrackingManager), typeof(IComplexPropertyTrackable), typeof(ICollectionPropertyTrackable), typeof(IEditableObjectInternal), typeof(INotifyPropertyChanged) },
+            //var changeTrackingInterceptor = new ChangeTrackingInterceptor<T>(status);
+            var changeTrackingInterceptor = (IInterceptor)Activator.CreateInstance(
+                GetGenericType(typeof(ChangeTrackingInterceptor<>), target.GetType()), 
+                status);
+
+            //var notifyPropertyChangedInterceptor = new NotifyPropertyChangedInterceptor<T>(changeTrackingInterceptor);
+            var notifyPropertyChangedInterceptor = (IInterceptor)Activator.CreateInstance(
+                GetGenericType(typeof(NotifyPropertyChangedInterceptor<>), target.GetType()), 
+                changeTrackingInterceptor);
+
+            //var editableObjectInterceptor = new EditableObjectInterceptor<T>(notifyParentListItemCanceled);
+            var editableObjectInterceptor = (IInterceptor)Activator.CreateInstance(
+                GetGenericType(typeof(EditableObjectInterceptor<>), target.GetType()),
+                notifyParentListItemCanceled);
+
+            //var complexPropertyInterceptor = new ComplexPropertyInterceptor<T>(changeTrackingSettings, graph);
+            var complexPropertyInterceptor = (IInterceptor)Activator.CreateInstance(
+                GetGenericType(typeof(ComplexPropertyInterceptor<>), target.GetType()),
+                changeTrackingSettings, graph);
+
+            //var collectionPropertyInterceptor = new CollectionPropertyInterceptor<T>(changeTrackingSettings, graph);
+            var collectionPropertyInterceptor = (IInterceptor)Activator.CreateInstance(
+                GetGenericType(typeof(CollectionPropertyInterceptor<>), target.GetType()),
+                changeTrackingSettings, graph);
+
+            object proxy = _ProxyGenerator.CreateClassProxyWithTarget(target.GetType(),
+                new[] { 
+                    typeof(IChangeTrackableInternal), 
+                    typeof(IRevertibleChangeTrackingInternal), 
+                    //typeof(IChangeTrackable<T>), 
+                    GetGenericType(typeof(IChangeTrackable<>), target.GetType()),
+                    typeof(IChangeTrackingManager), 
+                    typeof(IComplexPropertyTrackable), 
+                    typeof(ICollectionPropertyTrackable), 
+                    typeof(IEditableObjectInternal), 
+                    typeof(INotifyPropertyChanged) },
                 target,
-                GetOptions(typeof(T)),
+                GetOptions(target.GetType()),
                 notifyPropertyChangedInterceptor,
                 changeTrackingInterceptor,
                 editableObjectInterceptor,
                 complexPropertyInterceptor,
                 collectionPropertyInterceptor);
             CopyFieldsAndProperties(source: target, target: proxy);
-            notifyPropertyChangedInterceptor.IsInitialized = true;
-            changeTrackingInterceptor.IsInitialized = true;
-            editableObjectInterceptor.IsInitialized = true;
-            complexPropertyInterceptor.IsInitialized = true;
-            collectionPropertyInterceptor.IsInitialized = true;
+            (notifyPropertyChangedInterceptor as IInterceptorSettings).IsInitialized = true;
+            (changeTrackingInterceptor as IInterceptorSettings).IsInitialized = true;
+            (editableObjectInterceptor as IInterceptorSettings).IsInitialized = true;
+            (complexPropertyInterceptor as IInterceptorSettings).IsInitialized = true;
+            (collectionPropertyInterceptor as IInterceptorSettings).IsInitialized = true;
             graph.Add(new ProxyWeakTargetMap(target, proxy));
             return (T)proxy;
+        }
+
+        private Type GetGenericType(Type generic, Type genericTypeParameter)
+        {
+            return generic.MakeGenericType(genericTypeParameter);
         }
 
         internal ICollection<T> AsTrackableCollection<T>(ICollection<T> target, ChangeTrackingSettings changeTrackingSettings) where T : class

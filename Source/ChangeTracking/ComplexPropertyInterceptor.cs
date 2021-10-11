@@ -36,7 +36,7 @@ namespace ChangeTracking
             }
         }
 
-        internal ComplexPropertyInterceptor(ChangeTrackingSettings changeTrackingSettings, Graph graph)
+        public ComplexPropertyInterceptor(ChangeTrackingSettings changeTrackingSettings, Graph graph)
         {
             _ChangeTrackingSettings = changeTrackingSettings;
             _Graph = graph;
