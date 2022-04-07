@@ -1,5 +1,6 @@
 ﻿using ChangeTracking.Internal;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace ChangeTracking
 {
@@ -15,12 +16,12 @@ namespace ChangeTracking
             return ChangeTrackingFactory.Default.AsTrackable(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable), status);
         }
 
-        public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target) where T : class
+        public static ICollection<T> AsTrackable<T>(this Collection<T> target) where T : class
         {
             return ChangeTrackingFactory.Default.AsTrackableCollection(target);
         }
 
-        public static ICollection<T> AsTrackable<T>(this System.Collections.ObjectModel.Collection<T> target, bool makeComplexPropertiesTrackable = true, bool makeCollectionPropertiesTrackable = true) where T : class
+        public static ICollection<T> AsTrackable<T>(this Collection<T> target, bool makeComplexPropertiesTrackable = true, bool makeCollectionPropertiesTrackable = true) where T : class
         {
             return ChangeTrackingFactory.Default.AsTrackableCollection(target, new ChangeTrackingSettings(makeComplexPropertiesTrackable, makeCollectionPropertiesTrackable));
         }

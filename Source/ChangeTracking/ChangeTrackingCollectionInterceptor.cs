@@ -30,13 +30,14 @@ namespace ChangeTracking
 
         internal ChangeTrackingCollectionInterceptor(IList<T> target, ChangeTrackingSettings changeTrackingSettings, Graph graph)
         {
+            IList<T> proxies = new List<T>();
             _ChangeTrackingSettings = changeTrackingSettings;
             _Graph = graph;
             for (int i = 0; i < target.Count; i++)
             {
-                target[i] = ChangeTrackingFactory.Default.AsTrackable(target[i], ChangeStatus.Unchanged, ItemCanceled, _ChangeTrackingSettings, _Graph);
+                proxies.Add(ChangeTrackingFactory.Default.AsTrackable(target[i], ChangeStatus.Unchanged, ItemCanceled, _ChangeTrackingSettings, _Graph));
             }
-            _WrappedTarget = new ChangeTrackingBindingList<T>(target, DeleteItem, ItemCanceled, _ChangeTrackingSettings, _Graph);
+            _WrappedTarget = new ChangeTrackingBindingList<T>(proxies, DeleteItem, ItemCanceled, _ChangeTrackingSettings, _Graph);
             _DeletedItems = new List<T>();
         }
 

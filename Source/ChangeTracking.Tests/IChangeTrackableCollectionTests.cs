@@ -51,10 +51,10 @@ namespace ChangeTracking.Tests
         public void When_Calling_AsTrackable_On_Collection_All_Items_Should_Become_Trackable()
         {
             var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
 
-            orders.AsTrackable();
-
-            orders.Should().ContainItemsAssignableTo<IChangeTrackable<Order>>();
+            orders.Should().ContainItemsAssignableTo<Order>();
+            trackable.Should().ContainItemsAssignableTo<IChangeTrackable<Order>>();
         }
 
         [Fact]
@@ -266,7 +266,7 @@ namespace ChangeTracking.Tests
             var orders = Helper.GetOrdersIList();
             var trackable = orders.AsTrackable();
 
-            var first = orders.First();
+            var first = trackable.First();
             first.Id = 963;
             first.CustomerNumber = "Testing";
             var collectionIntf = trackable.CastToIChangeTrackableCollection();
@@ -344,7 +344,7 @@ namespace ChangeTracking.Tests
             trackable.Address.Should().NotBeAssignableTo<IChangeTrackable<Address>>();
             ChangeTrackingFactory.Default.MakeComplexPropertiesTrackable = true;
         }
-               
+
         [Fact]
         public void When_Clear_Collection_Should_Work()
         {
