@@ -48,13 +48,27 @@ namespace ChangeTracking.Tests
         }
 
         [Fact]
+        public void When_Calling_AsTrackable_On_Collection_Only_Tracked_Items_Should_Become_Trackable()
+        {
+            ChangeTrackingFactory.Default.CollectionItemsShouldNotBeProxies = false;
+
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            orders.First().Should().NotBeAssignableTo<IChangeTrackable<Order>>();
+            trackable.Should().ContainItemsAssignableTo<IChangeTrackable<Order>>();
+
+            ChangeTrackingFactory.Default.CollectionItemsShouldNotBeProxies = true;
+        }
+
+        [Fact]
         public void When_Calling_AsTrackable_On_Collection_All_Items_Should_Become_Trackable()
         {
             var orders = Helper.GetOrdersIList();
-
-            orders.AsTrackable();
+            var trackable = orders.AsTrackable();
 
             orders.Should().ContainItemsAssignableTo<IChangeTrackable<Order>>();
+            trackable.Should().ContainItemsAssignableTo<IChangeTrackable<Order>>();
         }
 
         [Fact]
@@ -261,6 +275,32 @@ namespace ChangeTracking.Tests
         }
 
         [Fact]
+        public void RejectChanges_On_Collection_Should_RejectChanges_Only_After_Last_AcceptChanges_With_Option()
+        {
+            ChangeTrackingFactory.Default.CollectionItemsShouldNotBeProxies = false;
+
+            var orders = Helper.GetOrdersIList();
+            var trackable = orders.AsTrackable();
+
+            var first = trackable.First();
+            first.Id = 963;
+            first.CustomerNumber = "Testing";
+            var collectionIntf = trackable.CastToIChangeTrackableCollection();
+            collectionIntf.AcceptChanges();
+            first.Id = 999;
+            first.CustomerNumber = "Testing 123";
+            collectionIntf.RejectChanges();
+            var intf = first.CastToIChangeTrackable();
+            var orderToMatch = Helper.GetOrder();
+            orderToMatch.Id = 963;
+            orderToMatch.CustomerNumber = "Testing";
+            Order originalOrder = intf.GetOriginal();
+
+            originalOrder.Should().BeEquivalentTo(orderToMatch, options => options.IgnoringCyclicReferences());
+            intf.GetOriginalValue(o => o.Id).Should().Be(963);
+
+            ChangeTrackingFactory.Default.CollectionItemsShouldNotBeProxies = true;
+        }
         public void RejectChanges_On_Collection_Should_RejectChanges_Only_After_Last_AcceptChanges()
         {
             var orders = Helper.GetOrdersIList();
@@ -344,7 +384,7 @@ namespace ChangeTracking.Tests
             trackable.Address.Should().NotBeAssignableTo<IChangeTrackable<Address>>();
             ChangeTrackingFactory.Default.MakeComplexPropertiesTrackable = true;
         }
-               
+
         [Fact]
         public void When_Clear_Collection_Should_Work()
         {
