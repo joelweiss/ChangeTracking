@@ -9,18 +9,14 @@ namespace ChangeTracking
 {
     internal class ChangeTrackingProxyGenerationHook : IProxyGenerationHook
     {
-        private static HashSet<string> _MethodsToSkip;
+        private HashSet<string> _MethodsToSkip;
         private readonly Type _Type;
         private HashSet<MethodInfo> _InstanceMethodsToSkip;
 
-        static ChangeTrackingProxyGenerationHook()
+        public ChangeTrackingProxyGenerationHook(Type type, HashSet<string> methodsToSkip)
         {
-            _MethodsToSkip = new HashSet<string> { "Equals", "GetType", "ToString", "GetHashCode" };
-        }
-
-        public ChangeTrackingProxyGenerationHook(Type type)
-        {
-            _Type = type;
+            _Type = type ?? throw new ArgumentNullException(nameof(type));
+            _MethodsToSkip = methodsToSkip ?? throw new ArgumentNullException(nameof(methodsToSkip));
             const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             _InstanceMethodsToSkip = new HashSet<MethodInfo>(type
                 .GetMethods(bindingFlags)

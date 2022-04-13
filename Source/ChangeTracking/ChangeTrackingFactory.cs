@@ -52,6 +52,7 @@ namespace ChangeTracking
         public bool MakeComplexPropertiesTrackable { get; set; }
         public bool MakeCollectionPropertiesTrackable { get; set; }
         public bool CollectionItemsShouldNotBeProxies { get; set; }
+        public HashSet<string> MethodsToSkip { get; } = new HashSet<string>() { "Equals", "GetType", "ToString", "GetHashCode" };
 
         internal T AsTrackable<T>(T target, ChangeStatus status, Action<T> notifyParentListItemCanceled, ChangeTrackingSettings changeTrackingSettings, Graph graph) where T : class
         {
@@ -63,7 +64,7 @@ namespace ChangeTracking
             }
 
             //if T was ICollection<T> it would of gone to one of the other overloads
-            if (target as ICollection != null)
+            if (target is ICollection)
             {
                 throw new InvalidOperationException("Only IList<T>, List<T> and ICollection<T> are supported");
             }
@@ -120,7 +121,7 @@ namespace ChangeTracking
         {
             ProxyGenerationOptions CreateOptions(Type createOptionsForType) => new ProxyGenerationOptions
             {
-                Hook = new ChangeTrackingProxyGenerationHook(createOptionsForType),
+                Hook = new ChangeTrackingProxyGenerationHook(createOptionsForType, MethodsToSkip),
                 Selector = _Selector
             };
             return _Options.GetOrAdd(type, CreateOptions);
