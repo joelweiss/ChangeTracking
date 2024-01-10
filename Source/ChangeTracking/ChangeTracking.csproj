@@ -13,7 +13,7 @@
 
       By using Castle Dynamic Proxy to create proxies of your classes at runtime, you can use your objects just like you used do, and just by calling the AsTrackable() extension method, you get automatic change tracking, and cancellation.
     </Description>
-    <PackageLicenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md&lt;/licenseUrl</PackageLicenseUrl>
+    <PackageLicenseUrl>https://github.com/joelweiss/ChangeTracking/blob/master/License.md</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/joelweiss/ChangeTracking</PackageProjectUrl>
     <RepositoryUrl>https://github.com/joelweiss/ChangeTracking</RepositoryUrl>
     <PackageTags>ChangeTracking DynamicProxy Change Tracking POCO</PackageTags>
